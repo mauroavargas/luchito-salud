@@ -22,18 +22,20 @@ export default function Auth() {
       if (msg.includes('invalid login')) setError('Correo o contraseña incorrectos.')
       else if (msg.includes('already registered')) setError('Ese correo ya tiene cuenta. Entra con tu contraseña.')
       else if (msg.includes('password')) setError('La contraseña debe tener al menos 6 caracteres.')
+      else if (msg.includes('fetch') || msg.includes('network'))
+        setError('No hay internet. Inténtalo cuando vuelva la señal.')
       else setError(err.message)
     }
     setBusy(false)
   }
 
   return (
-    <div className="app" style={{ paddingBottom: 40 }}>
-      <div style={{ height: 'max(40px, env(safe-area-inset-top))' }} />
-      <div className="center stack" style={{ gap: 6, marginBottom: 26 }}>
-        <div style={{ fontSize: 46 }}>🩺</div>
-        <h1>Mi Historial de Salud</h1>
-        <p className="muted small">
+    <div className="app" style={{ paddingBottom: 'var(--s10)' }}>
+      <div style={{ height: 'max(var(--s16), calc(env(safe-area-inset-top) + var(--s10)))' }} />
+
+      <div className="center" style={{ marginBottom: 'var(--s8)' }}>
+        <h1 style={{ fontSize: 34 }}>Mi Historial de Salud</h1>
+        <p className="small muted" style={{ marginTop: 'var(--s3)' }}>
           Anota lo que te pasa, con fotos si hace falta, y llega a la cita con todo claro.
         </p>
       </div>
@@ -46,6 +48,7 @@ export default function Auth() {
             inputMode="email"
             autoComplete="email"
             autoCapitalize="none"
+            autoCorrect="off"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -66,19 +69,19 @@ export default function Auth() {
         </label>
 
         {error && (
-          <p className="small" style={{ color: 'var(--alert)', marginBottom: 12 }}>
+          <p className="small" role="alert" style={{ color: 'var(--alert-ink)', marginBottom: 'var(--s3)' }}>
             {error}
           </p>
         )}
 
         <button className="btn block" disabled={busy}>
-          {busy ? 'Un momento...' : mode === 'entrar' ? 'Entrar' : 'Crear mi cuenta'}
+          {busy ? 'Un momento…' : mode === 'entrar' ? 'Entrar' : 'Crear mi cuenta'}
         </button>
       </form>
 
-      <div className="center" style={{ marginTop: 16 }}>
+      <div className="center" style={{ marginTop: 'var(--s4)' }}>
         <button
-          className="btn link"
+          className="btn quiet"
           type="button"
           onClick={() => {
             setMode(mode === 'entrar' ? 'crear' : 'entrar')
@@ -89,7 +92,7 @@ export default function Auth() {
         </button>
       </div>
 
-      <p className="tiny muted center" style={{ marginTop: 28, lineHeight: 1.6 }}>
+      <p className="meta center" style={{ marginTop: 'var(--s8)', lineHeight: 1.6 }}>
         Tu información es privada: solo se ve desde tu cuenta.
         <br />
         Nadie más puede leer tus registros ni tus fotos.

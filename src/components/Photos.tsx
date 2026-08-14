@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Icon from './Icon'
 import type { Attachment } from '../types'
 import { signedUrl } from '../lib/data'
 import { shrinkAll } from '../lib/image'
@@ -30,15 +31,15 @@ export function PhotoPicker({
             <button
               className="x"
               type="button"
-              aria-label="Quitar foto"
+              aria-label={`Quitar la foto ${i + 1}`}
               onClick={() => onChange(files.filter((_, j) => j !== i))}
             >
-              ✕
+              <Icon name="cerrar" size={14} />
             </button>
           </div>
         ))}
         <button className="photo-add" type="button" onClick={() => inputRef.current?.click()} disabled={busy}>
-          <span>📷</span>
+          <Icon name="camara" size={20} />
           {busy ? 'Cargando' : 'Agregar'}
         </button>
       </div>
@@ -98,12 +99,12 @@ export function AttachmentGrid({
           <div className="thumb" key={a.id}>
             {urls[a.id] ? (
               <a href={urls[a.id]} target="_blank" rel="noreferrer">
-                <img src={urls[a.id]} alt={a.caption ?? 'Foto adjunta'} />
+                <img src={urls[a.id]} alt={a.caption ?? 'Foto del registro'} />
               </a>
             ) : null}
             {onRemove && (
               <button className="x no-print" type="button" aria-label="Borrar foto" onClick={() => onRemove(a)}>
-                ✕
+                <Icon name="cerrar" size={14} />
               </button>
             )}
           </div>
@@ -115,8 +116,8 @@ export function AttachmentGrid({
             onClick={() => inputRef.current?.click()}
             disabled={busy}
           >
-            <span>📷</span>
-            {busy ? '...' : 'Agregar'}
+            <Icon name="camara" size={20} />
+            {busy ? 'Cargando' : 'Agregar'}
           </button>
         )}
       </div>

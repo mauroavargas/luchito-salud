@@ -3,8 +3,10 @@ import EntrySheet from '../components/EntrySheet'
 import ReminderSheet from '../components/ReminderSheet'
 import DocumentSheet from '../components/DocumentSheet'
 import ProfileSheet from '../components/ProfileSheet'
+import Icon from '../components/Icon'
+import type { IconName } from '../components/Icon'
 import { useApp } from '../lib/store'
-import { KIND_EMOJI, KIND_LABEL, REM_EMOJI, REPEAT_LABEL } from '../types'
+import { KIND_ICON, KIND_LABEL, KIND_SHORT, KIND_TONE, REM_ICON, REPEAT_LABEL } from '../types'
 import type { EntryKind, Reminder } from '../types'
 import { fmtDayHeader, severityLabel } from '../lib/format'
 import { buildNudges, pendingReminders, todayKey } from '../lib/nudges'
@@ -26,6 +28,7 @@ export default function Hoy({
   const [docSheet, setDocSheet] = useState(false)
   const [perfil, setPerfil] = useState(false)
   const [verTodo, setVerTodo] = useState(false)
+  const [marcando, setMarcando] = useState<string | null>(null)
 
   const hoy = todayKey()
   const pendientes = useMemo(() => pendingReminders(data, hoy), [data, hoy])
@@ -58,20 +61,29 @@ export default function Hoy({
     }
   }
 
+  const iconoNudge: Record<NudgeAction['type'], IconName> = {
+    documento: 'orden',
+    medicamento: 'medicamento',
+    tema: 'historial',
+    perfil: 'alerta',
+    registro: 'reloj',
+    recordatorio: 'campana',
+  }
+
   return (
     <>
-      <div className="topbar">
+      <header className="topbar">
         <div>
           <h1>Hola{nombre ? `, ${nombre}` : ''}</h1>
           <p className="sub">
             {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-      </div>
+      </header>
 
       {(offline || pendingCount > 0) && (
-        <div className="banner" style={{ marginBottom: 14 }}>
-          <span aria-hidden>📶</span>
+        <div className="banner" style={{ marginBottom: 'var(--s5)' }} role="status">
+          <Icon name="sin-senal" size={18} />
           <span>
             {offline ? 'Sin internet. ' : ''}
             {pendingCount > 0
@@ -81,164 +93,154 @@ export default function Hoy({
         </div>
       )}
 
-      {/* --------- Pendientes --------- */}
-      <div className="row" style={{ marginBottom: 10 }}>
-        <h2 style={{ flex: 1 }}>Pendientes de hoy</h2>
-        <button className="btn link" onClick={() => setRemSheet('nuevo')}>
-          + Recordatorio
+      {/* --------- lo que hay que hacer hoy --------- */}
+      <div className="section-row" style={{ marginTop: 0 }}>
+        <h2 className="section">Pendientes de hoy</h2>
+        <button className="btn quiet" onClick={() => setRemSheet('nuevo')}>
+          <Icon name="mas" size={16} />
+          Recordatorio
         </button>
       </div>
 
       {pendientes.length === 0 ? (
-        <div className="empty" style={{ padding: '22px 20px' }}>
+        <p className="empty">
           {data.reminders.length === 0
-            ? 'No tienes recordatorios. Ponte uno para no olvidar tomar o reclamar medicamentos.'
-            : '¡Todo al día por hoy! 🎉'}
-        </div>
+            ? 'No tienes recordatorios. Ponte uno para no olvidar tomar o reclamar los medicamentos.'
+            : 'Todo al día por hoy.'}
+        </p>
       ) : (
         <div className="stack">
           {pendientes.map(({ reminder: r, overdue, doneToday }) => (
-            <div
-              className="card"
-              key={r.id}
-              style={overdue > 0 ? { borderColor: 'var(--alert)', background: 'var(--alert-soft)' } : undefined}
-            >
-              <div className="row" style={{ alignItems: 'flex-start' }}>
-                <button
-                  aria-label={doneToday ? 'Desmarcar' : 'Marcar como hecho'}
-                  onClick={async () => {
-                    try {
-                      await markReminder(r.id, hoy, !doneToday)
-                      if (!doneToday) say('¡Hecho! Queda registrado.')
-                    } catch {
-                      say('No se pudo marcar. Revisa la señal.')
-                    }
-                  }}
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 10,
-                    border: `2px solid ${doneToday ? 'var(--primary)' : 'var(--line)'}`,
-                    background: doneToday ? 'var(--primary)' : 'var(--surface)',
-                    color: '#fff',
-                    fontSize: 18,
-                    lineHeight: 1,
-                    flexShrink: 0,
-                  }}
-                >
-                  {doneToday ? '✓' : ''}
-                </button>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <strong style={{ fontSize: 16, textDecoration: doneToday ? 'line-through' : undefined }}>
-                    {REM_EMOJI[r.kind]} {r.title}
-                  </strong>
-                  <p className="tiny muted" style={{ marginTop: 2 }}>
-                    {overdue > 0 ? (
-                      <b style={{ color: 'var(--alert)' }}>
-                        Atrasado {overdue} día{overdue === 1 ? '' : 's'}
-                      </b>
-                    ) : (
-                      REPEAT_LABEL[r.repeat]
-                    )}
-                    {r.due_time ? ` · ${r.due_time}` : ''}
-                  </p>
-                  {r.notes && (
-                    <p className="small" style={{ marginTop: 5 }}>
-                      {r.notes}
-                    </p>
+            <div className="todo" key={r.id} data-late={overdue > 0} data-done={doneToday}>
+              <button
+                className="tick"
+                aria-pressed={doneToday}
+                aria-label={doneToday ? `Desmarcar ${r.title}` : `Marcar ${r.title} como hecho`}
+                disabled={marcando === r.id}
+                onClick={async () => {
+                  setMarcando(r.id)
+                  try {
+                    await markReminder(r.id, hoy, !doneToday)
+                    if (!doneToday) say('Hecho. Queda registrado.')
+                  } catch {
+                    say('No se pudo marcar. Revisa la señal.')
+                  } finally {
+                    setMarcando(null)
+                  }
+                }}
+              >
+                <Icon name="check" size={18} />
+              </button>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className="todo-title">
+                  <Icon name={REM_ICON[r.kind]} size={17} style={{ flexShrink: 0, opacity: 0.75 }} />
+                  {r.title}
+                </p>
+                <p className="meta" style={{ marginTop: 2 }}>
+                  {overdue > 0 ? (
+                    <strong style={{ color: 'var(--alert-ink)' }}>
+                      Atrasado {overdue} día{overdue === 1 ? '' : 's'}
+                    </strong>
+                  ) : (
+                    REPEAT_LABEL[r.repeat]
                   )}
-                </div>
-                <button className="btn link" onClick={() => setRemSheet(r)}>
-                  Editar
-                </button>
+                  {r.due_time ? ` · ${r.due_time}` : ''}
+                </p>
+                {r.notes && (
+                  <p className="small" style={{ marginTop: 'var(--s1)' }}>
+                    {r.notes}
+                  </p>
+                )}
               </div>
+
+              <button className="btn quiet" onClick={() => setRemSheet(r)} aria-label={`Editar ${r.title}`}>
+                <Icon name="editar" size={17} />
+              </button>
             </div>
           ))}
         </div>
       )}
 
-      {/* --------- Sugerencias --------- */}
+      {/* --------- lo que se está quedando por fuera --------- */}
       {nudges.length > 0 && (
         <>
-          <div className="section-title">Se te está quedando por fuera</div>
+          <h2 className="section">Se te está quedando por fuera</h2>
           <div className="stack">
             {visibles.map((n) => (
-              <div className="card" key={n.id}>
-                <div className="row" style={{ alignItems: 'flex-start' }}>
-                  <span aria-hidden style={{ fontSize: 20 }}>
-                    {n.icon}
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p className="small">{n.text}</p>
-                    <button className="btn small-btn" style={{ marginTop: 10 }} onClick={() => hacer(n.action)}>
-                      {n.cta}
-                    </button>
-                  </div>
+              <div className="nudge" key={n.id}>
+                <Icon name={iconoNudge[n.action.type]} size={19} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p className="small">{n.text}</p>
+                  <button className="btn sm ghost" style={{ marginTop: 'var(--s3)' }} onClick={() => hacer(n.action)}>
+                    {n.cta}
+                  </button>
                 </div>
               </div>
             ))}
           </div>
           {nudges.length > 3 && (
-            <button className="btn link" style={{ marginTop: 6 }} onClick={() => setVerTodo(!verTodo)}>
+            <button className="btn quiet" style={{ marginTop: 'var(--s2)' }} onClick={() => setVerTodo(!verTodo)}>
               {verTodo ? 'Ver menos' : `Ver las otras ${nudges.length - 3}`}
+              <Icon name="chevron" size={15} style={{ transform: verTodo ? 'rotate(-90deg)' : 'rotate(90deg)' }} />
             </button>
           )}
         </>
       )}
 
-      {/* --------- Registro rápido --------- */}
-      <div className="section-title">¿Qué quieres anotar?</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      {/* --------- anotar --------- */}
+      <h2 className="section">¿Qué quieres anotar?</h2>
+      <div className="quick">
         {QUICK.map((k) => (
-          <button
-            key={k}
-            className="card tap"
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, minHeight: 92 }}
-            onClick={() => setEntryKind(k)}
-          >
-            <span style={{ fontSize: 26 }} aria-hidden>
-              {KIND_EMOJI[k]}
-            </span>
-            <span style={{ fontWeight: 650, fontSize: 16 }}>{KIND_LABEL[k]}</span>
+          <button key={k} data-tone={KIND_TONE[k]} onClick={() => setEntryKind(k)} aria-label={KIND_LABEL[k]}>
+            <Icon name={KIND_ICON[k]} size={24} />
+            {KIND_SHORT[k]}
           </button>
         ))}
       </div>
 
-      <div className="card" style={{ marginTop: 14, background: 'var(--primary-soft)', borderColor: 'var(--primary)' }}>
-        <div className="row" style={{ alignItems: 'flex-start' }}>
-          <span style={{ fontSize: 24 }} aria-hidden>
-            📋
-          </span>
-          <div style={{ flex: 1 }}>
-            <h3 style={{ color: 'var(--primary-dark)' }}>¿Vas a la cita?</h3>
-            <p className="small" style={{ color: 'var(--primary-dark)', marginTop: 2 }}>
-              Abre el resumen: queda todo ordenado y claro para mostrárselo al médico.
-            </p>
-            <button className="btn small-btn" style={{ marginTop: 10 }} onClick={goResumen}>
-              Ver mi resumen
-            </button>
-          </div>
-        </div>
-      </div>
+      <button
+        className="row"
+        onClick={goResumen}
+        style={{
+          width: '100%',
+          marginTop: 'var(--s5)',
+          padding: 'var(--s4)',
+          border: '1px solid var(--primary)',
+          borderRadius: 'var(--r-lg)',
+          background: 'var(--primary-tint)',
+          color: 'var(--primary-ink)',
+          textAlign: 'left',
+        }}
+      >
+        <Icon name="resumen" size={20} />
+        <span style={{ flex: 1 }}>
+          <strong style={{ display: 'block', fontSize: 15.5 }}>Prepararme para la cita</strong>
+          <span className="small">Todo ordenado en una hoja para el médico</span>
+        </span>
+        <Icon name="chevron" size={18} />
+      </button>
 
       {recientes.length > 0 && (
         <>
-          <div className="section-title">Lo último que anotaste</div>
+          <h2 className="section">Lo último que anotaste</h2>
           <div className="stack">
             {recientes.map((e) => {
               const tema = data.topics.find((t) => t.id === e.topic_id)
               return (
                 <div className="card" key={e.id}>
-                  <div className="row">
-                    <span aria-hidden style={{ fontSize: 20 }}>
-                      {KIND_EMOJI[e.kind]}
-                    </span>
+                  <div className="row top">
+                    <Icon
+                      name={KIND_ICON[e.kind]}
+                      size={19}
+                      style={{ marginTop: 2, color: KIND_TONE[e.kind] ? 'var(--alert)' : 'var(--ink-2)' }}
+                    />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="row" style={{ gap: 8 }}>
-                        <strong style={{ fontSize: 16 }}>{e.title || KIND_LABEL[e.kind]}</strong>
+                      <div className="row wrap">
+                        <strong style={{ fontSize: 15.5 }}>{e.title || KIND_LABEL[e.kind]}</strong>
                         {e.severity !== null && <span className="sev-pill">{e.severity}/10</span>}
                       </div>
-                      <p className="tiny muted">
+                      <p className="meta">
                         {fmtDayHeader(e.occurred_at)}
                         {tema ? ` · ${tema.name}` : ''}
                         {e.severity !== null ? ` · ${severityLabel(e.severity)}` : ''}

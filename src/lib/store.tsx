@@ -263,10 +263,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             reminders: d.reminders.map((r) => (r.id === id ? { ...r, last_done_on: day } : r)),
           }))
         } else {
-          await api.unlogReminder(id, day)
+          const previo = await api.unlogReminder(id, day)
           setData((d) => ({
             ...d,
             reminderLogs: d.reminderLogs.filter((l) => !(l.reminder_id === id && l.done_on === day)),
+            reminders: d.reminders.map((r) => (r.id === id ? { ...r, last_done_on: previo } : r)),
           }))
         }
       },

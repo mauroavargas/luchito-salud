@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import EntrySheet from '../components/EntrySheet'
 import TopicsSheet from '../components/TopicsSheet'
+import Icon from '../components/Icon'
 import { AttachmentGrid } from '../components/Photos'
 import { useApp } from '../lib/store'
-import { KIND_EMOJI, KIND_LABEL } from '../types'
+import { KIND_ICON, KIND_LABEL, KIND_TONE } from '../types'
 import type { Entry } from '../types'
 import { dayKey, fmtDayHeader, severityLabel } from '../lib/format'
 
@@ -31,84 +32,111 @@ export default function Historial() {
 
   return (
     <>
-      <div className="topbar">
+      <header className="topbar">
         <div>
           <h1>Historial</h1>
-          <p className="sub">{data.entries.length} registro(s) en total</p>
+          <p className="sub">
+            {data.entries.length === 0
+              ? 'Sin registros todavía'
+              : `${data.entries.length} registro${data.entries.length === 1 ? '' : 's'} en total`}
+          </p>
         </div>
-        <button className="btn ghost small-btn" onClick={() => setShowTopics(true)}>
+        <button className="btn ghost sm" onClick={() => setShowTopics(true)}>
           Temas
         </button>
-      </div>
+      </header>
 
-      <div className="chips" style={{ marginBottom: 16 }}>
-        <button className="chip" aria-pressed={topicFilter === 'todos'} onClick={() => setTopicFilter('todos')}>
-          Todo
-        </button>
-        {data.topics.map((t) => (
-          <button key={t.id} className="chip" aria-pressed={topicFilter === t.id} onClick={() => setTopicFilter(t.id)}>
-            {t.name}
+      {data.topics.length > 0 && (
+        <div className="chips" style={{ marginBottom: 'var(--s5)' }}>
+          <button className="chip" aria-pressed={topicFilter === 'todos'} onClick={() => setTopicFilter('todos')}>
+            Todo
           </button>
-        ))}
-      </div>
+          {data.topics.map((t) => (
+            <button key={t.id} className="chip" aria-pressed={topicFilter === t.id} onClick={() => setTopicFilter(t.id)}>
+              {t.name}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {loading && <p className="small muted" style={{ marginBottom: 10 }}>Actualizando…</p>}
+      {loading && data.entries.length === 0 && <p className="meta">Cargando…</p>}
 
       {groups.length === 0 ? (
         <div className="empty">
-          Nada por aquí todavía.
-          <br />
-          <button className="btn link" onClick={() => void refresh()}>
-            Volver a cargar
-          </button>
+          {topicFilter === 'todos' ? (
+            <>
+              Todavía no hay nada anotado.
+              <br />
+              Empieza por lo que más te preocupa hoy, desde la pestaña Hoy.
+            </>
+          ) : (
+            <>
+              No hay registros de este tema.
+              <br />
+              <button className="btn quiet" onClick={() => setTopicFilter('todos')}>
+                Ver todo el historial
+              </button>
+            </>
+          )}
+          {topicFilter === 'todos' && (
+            <div>
+              <button className="btn quiet" style={{ marginTop: 'var(--s3)' }} onClick={() => void refresh()}>
+                Volver a cargar
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         groups.map(([key, list]) => (
-          <div key={key}>
-            <div className="section-title">{fmtDayHeader(list[0].occurred_at)}</div>
+          <section key={key}>
+            <h2 className="section">{fmtDayHeader(list[0].occurred_at)}</h2>
             <div className="stack">
               {list.map((e) => {
                 const tema = data.topics.find((t) => t.id === e.topic_id)
                 const fotos = data.attachments.filter((a) => a.entry_id === e.id)
                 return (
-                  <div className="card tap" key={e.id} onClick={() => setEditing(e)}>
-                    <div className="row" style={{ alignItems: 'flex-start' }}>
-                      <span aria-hidden style={{ fontSize: 20 }}>
-                        {KIND_EMOJI[e.kind]}
-                      </span>
+                  <button className="card tappable" key={e.id} onClick={() => setEditing(e)}>
+                    <div className="row top">
+                      <Icon
+                        name={KIND_ICON[e.kind]}
+                        size={19}
+                        style={{ marginTop: 2, color: KIND_TONE[e.kind] ? 'var(--alert)' : 'var(--ink-2)' }}
+                      />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="row wrap" style={{ gap: 8 }}>
-                          <strong style={{ fontSize: 16 }}>{e.title || KIND_LABEL[e.kind]}</strong>
+                        <div className="row wrap">
+                          <strong style={{ fontSize: 15.5 }}>{e.title || KIND_LABEL[e.kind]}</strong>
                           {e.severity !== null && (
                             <span className="sev-pill">
                               {e.severity}/10 {severityLabel(e.severity)}
                             </span>
                           )}
                         </div>
-                        <p className="tiny muted" style={{ marginTop: 2 }}>
-                          {new Date(e.occurred_at).toLocaleTimeString('es-CO', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          })}
+                        <p className="meta" style={{ marginTop: 2 }}>
+                          <time dateTime={e.occurred_at}>
+                            {new Date(e.occurred_at).toLocaleTimeString('es-CO', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })}
+                          </time>
                           {tema ? ` · ${tema.name}` : ''}
                         </p>
                         {e.note && (
-                          <p className="small" style={{ marginTop: 8 }}>
+                          <p className="small measure" style={{ marginTop: 'var(--s2)' }}>
                             {e.note}
                           </p>
                         )}
                         {fotos.length > 0 && (
-                          <div style={{ marginTop: 10 }}>
+                          <div style={{ marginTop: 'var(--s3)' }}>
                             <AttachmentGrid attachments={fotos} />
                           </div>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 )
               })}
             </div>
-          </div>
+          </section>
         ))
       )}
 

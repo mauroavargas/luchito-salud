@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import Sheet from './Sheet'
+import Icon from './Icon'
 import { PhotoPicker, AttachmentGrid } from './Photos'
 import { useApp } from '../lib/store'
-import { KIND_EMOJI, KIND_LABEL } from '../types'
+import { KIND_ICON, KIND_LABEL, KIND_TONE } from '../types'
 import type { Entry, EntryKind } from '../types'
 import { fromLocalInput, severityLabel, toLocalInput } from '../lib/format'
 
@@ -54,6 +55,7 @@ export default function EntrySheet({
   const [files, setFiles] = useState<File[]>([])
   const [newTopic, setNewTopic] = useState('')
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const attachments = useMemo(
     () => (entry ? data.attachments.filter((a) => a.entry_id === entry.id) : []),
@@ -62,10 +64,11 @@ export default function EntrySheet({
 
   async function save() {
     if (!note.trim() && !title.trim()) {
-      say('Escribe al menos una nota corta de lo que pasó')
+      setError('Escribe al menos una nota corta de lo que pasó.')
       return
     }
     setBusy(true)
+    setError(null)
     try {
       let finalTopic = topicId
       if (newTopic.trim()) {
@@ -89,7 +92,7 @@ export default function EntrySheet({
       }
       onClose()
     } catch (e) {
-      say(e instanceof Error ? e.message : 'No se pudo guardar')
+      setError(e instanceof Error ? e.message : 'No se pudo guardar. Revisa la señal e inténtalo otra vez.')
     } finally {
       setBusy(false)
     }
@@ -101,13 +104,17 @@ export default function EntrySheet({
       onClose={onClose}
       footer={
         <div className="stack">
+          {error && (
+            <p className="small" style={{ color: 'var(--alert-ink)' }} role="alert">
+              {error}
+            </p>
+          )}
           <button className="btn block" onClick={save} disabled={busy}>
-            {busy ? 'Guardando...' : 'Guardar'}
+            {busy ? 'Guardando…' : 'Guardar'}
           </button>
           {entry && (
             <button
-              className="btn link"
-              style={{ color: 'var(--alert)' }}
+              className="btn quiet danger"
               onClick={async () => {
                 if (!confirm('¿Borrar este registro?')) return
                 await removeEntry(entry.id)
@@ -115,27 +122,26 @@ export default function EntrySheet({
                 onClose()
               }}
             >
+              <Icon name="basura" size={17} />
               Borrar registro
             </button>
           )}
         </div>
       }
     >
-      <div className="stack" style={{ gap: 18 }}>
+      <div className="stack" style={{ gap: 'var(--s6)' }}>
         <div>
-          <span className="section-title" style={{ marginTop: 0 }}>
-            Tipo
-          </span>
+          <h3 style={{ marginBottom: 'var(--s3)' }}>Tipo</h3>
           <div className="chips">
             {KINDS.map((k) => (
               <button
                 key={k}
                 type="button"
-                className={`chip${k === 'sangrado' || k === 'dolor' ? ' alert' : ''}`}
+                className={`chip${KIND_TONE[k] ? ' alert' : ''}`}
                 aria-pressed={kind === k}
                 onClick={() => setKind(k)}
               >
-                <span aria-hidden>{KIND_EMOJI[k]}</span>
+                <Icon name={KIND_ICON[k]} size={17} />
                 {KIND_LABEL[k]}
               </button>
             ))}
@@ -143,7 +149,7 @@ export default function EntrySheet({
         </div>
 
         <div>
-          <label className="field" style={{ marginBottom: 8 }}>
+          <label className="field" style={{ marginBottom: 'var(--s2)' }}>
             <span>¿Cuándo fue?</span>
             <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
           </label>
@@ -167,23 +173,26 @@ export default function EntrySheet({
 
         {NEEDS_SEVERITY.includes(kind) && (
           <div>
-            <span className="section-title" style={{ marginTop: 0 }}>
-              ¿Qué tan fuerte? {severity !== null && <b style={{ color: 'var(--alert)' }}>{severityLabel(severity)}</b>}
-            </span>
+            <h3 style={{ marginBottom: 'var(--s3)' }}>
+              ¿Qué tan fuerte?{' '}
+              {severity !== null && (
+                <span style={{ color: 'var(--alert-ink)' }}>· {severityLabel(severity)}</span>
+              )}
+            </h3>
             <div className="scale">
               {Array.from({ length: 11 }, (_, n) => (
                 <button
                   key={n}
                   type="button"
                   aria-pressed={severity === n}
-                  aria-label={`Intensidad ${n}`}
+                  aria-label={`Intensidad ${n} de 10`}
                   onClick={() => setSeverity(severity === n ? null : n)}
                 >
                   {n}
                 </button>
               ))}
             </div>
-            <p className="tiny muted" style={{ marginTop: 6 }}>
+            <p className="meta" style={{ marginTop: 'var(--s2)' }}>
               0 = nada · 10 = lo más fuerte que has sentido
             </p>
           </div>
@@ -205,10 +214,12 @@ export default function EntrySheet({
         </label>
 
         <div>
-          <span className="section-title" style={{ marginTop: 0 }}>
-            ¿De qué tema es?
-          </span>
-          <select value={topicId ?? ''} onChange={(e) => setTopicId(e.target.value || null)}>
+          <h3 style={{ marginBottom: 'var(--s3)' }}>¿De qué tema es?</h3>
+          <select
+            value={topicId ?? ''}
+            aria-label="Tema del registro"
+            onChange={(e) => setTopicId(e.target.value || null)}
+          >
             <option value="">Sin tema / general</option>
             {data.topics.map((t) => (
               <option key={t.id} value={t.id}>
@@ -218,17 +229,16 @@ export default function EntrySheet({
           </select>
           <input
             type="text"
-            style={{ marginTop: 8 }}
+            style={{ marginTop: 'var(--s2)' }}
             value={newTopic}
+            aria-label="Nombre de un tema nuevo"
             onChange={(e) => setNewTopic(e.target.value)}
             placeholder="…o escribe un tema nuevo aquí"
           />
         </div>
 
         <div>
-          <span className="section-title" style={{ marginTop: 0 }}>
-            Fotos
-          </span>
+          <h3 style={{ marginBottom: 'var(--s3)' }}>Fotos</h3>
           {entry ? (
             <AttachmentGrid
               attachments={attachments}
@@ -237,14 +247,15 @@ export default function EntrySheet({
               }}
               onAdd={(fs) => setFiles([...files, ...fs])}
             />
-          ) : null}
-          {!entry && <PhotoPicker files={files} onChange={setFiles} />}
+          ) : (
+            <PhotoPicker files={files} onChange={setFiles} />
+          )}
           {entry && files.length > 0 && (
-            <p className="tiny muted" style={{ marginTop: 8 }}>
+            <p className="meta" style={{ marginTop: 'var(--s2)' }}>
               {files.length} foto(s) nueva(s) se subirán al guardar.
             </p>
           )}
-          <p className="tiny muted" style={{ marginTop: 8 }}>
+          <p className="meta" style={{ marginTop: 'var(--s2)' }}>
             Sirve para lesiones, manchas, fórmulas médicas o resultados de exámenes.
           </p>
         </div>

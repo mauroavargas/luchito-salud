@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Sheet from '../components/Sheet'
+import Icon from '../components/Icon'
 import { useApp } from '../lib/store'
 import { EFFECT_LABEL } from '../types'
 import type { MedEffect, Medication } from '../types'
@@ -18,19 +19,21 @@ const EFFECT_BADGE: Record<MedEffect, string> = {
 type Draft = Partial<Medication> & { name: string }
 
 export default function Medicinas() {
-  const { data, addMed, editMed, removeMed, say } = useApp()
+  const { data, addMed, editMed, removeMed } = useApp()
   const [draft, setDraft] = useState<Draft | null>(null)
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const activos = data.medications.filter((m) => !m.ended_on)
   const pasados = data.medications.filter((m) => m.ended_on)
 
   async function save() {
     if (!draft?.name.trim()) {
-      say('Escribe el nombre del medicamento')
+      setError('Escribe el nombre del medicamento.')
       return
     }
     setBusy(true)
+    setError(null)
     try {
       const patch = {
         name: draft.name.trim(),
@@ -48,55 +51,54 @@ export default function Medicinas() {
       else await addMed(patch)
       setDraft(null)
     } catch {
-      say('No se pudo guardar')
+      setError('No se pudo guardar. Revisa la señal e inténtalo otra vez.')
     } finally {
       setBusy(false)
     }
   }
 
   const Card = ({ m }: { m: Medication }) => (
-    <div className="card tap" onClick={() => setDraft(m)}>
-      <div className="row" style={{ alignItems: 'flex-start' }}>
-        <span aria-hidden style={{ fontSize: 20 }}>
-          💊
-        </span>
+    <button className="card tappable" onClick={() => setDraft(m)}>
+      <div className="row top">
+        <Icon name="medicamento" size={19} style={{ marginTop: 2, color: 'var(--ink-2)' }} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <strong style={{ fontSize: 16 }}>{m.name}</strong>
-          <p className="tiny muted" style={{ marginTop: 2 }}>
+          <strong style={{ fontSize: 15.5 }}>{m.name}</strong>
+          <p className="meta" style={{ marginTop: 2 }}>
             {[m.dose, m.frequency].filter(Boolean).join(' · ') || 'Sin dosis anotada'}
           </p>
           {m.side_effects && (
-            <p className="small" style={{ marginTop: 6, color: 'var(--alert)' }}>
+            <p className="small" style={{ marginTop: 'var(--s2)', color: 'var(--alert-ink)' }}>
               Efectos: {m.side_effects}
             </p>
           )}
         </div>
         <span className={EFFECT_BADGE[m.effect]}>{EFFECT_LABEL[m.effect]}</span>
       </div>
-    </div>
+    </button>
   )
 
   return (
     <>
-      <div className="topbar">
+      <header className="topbar">
         <div>
           <h1>Medicamentos</h1>
           <p className="sub">Qué tomas y si te está sirviendo</p>
         </div>
-        <button className="btn small-btn" onClick={() => setDraft({ name: '', effect: 'sin_saber' })}>
-          + Agregar
+        <button className="btn sm" onClick={() => setDraft({ name: '', effect: 'sin_saber' })}>
+          <Icon name="mas" size={16} />
+          Agregar
         </button>
-      </div>
+      </header>
 
-      <p className="small muted" style={{ marginBottom: 16 }}>
+      <p className="small muted measure" style={{ marginBottom: 'var(--s5)' }}>
         Anotar qué ya probaste y no te funcionó le ahorra al médico volver a mandarte lo mismo.
       </p>
 
-      <div className="section-title" style={{ marginTop: 0 }}>
+      <h2 className="section" style={{ marginTop: 0 }}>
         Los que tomas ahora
-      </div>
+      </h2>
       {activos.length === 0 ? (
-        <div className="empty">No hay medicamentos activos anotados.</div>
+        <p className="empty">No hay medicamentos activos anotados.</p>
       ) : (
         <div className="stack">
           {activos.map((m) => (
@@ -107,7 +109,7 @@ export default function Medicinas() {
 
       {pasados.length > 0 && (
         <>
-          <div className="section-title">Los que ya tomaste antes</div>
+          <h2 className="section">Los que ya tomaste antes</h2>
           <div className="stack">
             {pasados.map((m) => (
               <Card key={m.id} m={m} />
@@ -119,22 +121,30 @@ export default function Medicinas() {
       {draft && (
         <Sheet
           title={draft.id ? 'Editar medicamento' : 'Nuevo medicamento'}
-          onClose={() => setDraft(null)}
+          onClose={() => {
+            setDraft(null)
+            setError(null)
+          }}
           footer={
             <div className="stack">
+              {error && (
+                <p className="small" style={{ color: 'var(--alert-ink)' }} role="alert">
+                  {error}
+                </p>
+              )}
               <button className="btn block" onClick={save} disabled={busy}>
-                {busy ? 'Guardando...' : 'Guardar'}
+                {busy ? 'Guardando…' : 'Guardar'}
               </button>
               {draft.id && (
                 <button
-                  className="btn link"
-                  style={{ color: 'var(--alert)' }}
+                  className="btn quiet danger"
                   onClick={async () => {
                     if (!confirm('¿Borrar este medicamento?')) return
                     await removeMed(draft.id!)
                     setDraft(null)
                   }}
                 >
+                  <Icon name="basura" size={17} />
                   Borrar
                 </button>
               )}
@@ -150,7 +160,7 @@ export default function Medicinas() {
               placeholder="Ej: Ibuprofeno 400 mg"
             />
           </label>
-          <div className="row" style={{ gap: 10 }}>
+          <div className="row" style={{ gap: 'var(--s3)', alignItems: 'flex-start' }}>
             <label className="field" style={{ flex: 1 }}>
               <span>Dosis</span>
               <input
@@ -171,10 +181,8 @@ export default function Medicinas() {
             </label>
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <span className="section-title" style={{ marginTop: 0 }}>
-              ¿Te está sirviendo?
-            </span>
+          <div style={{ marginBottom: 'var(--s5)' }}>
+            <h3 style={{ marginBottom: 'var(--s3)' }}>¿Te está sirviendo?</h3>
             <div className="chips">
               {EFFECTS.map((ef) => (
                 <button
@@ -189,7 +197,7 @@ export default function Medicinas() {
             </div>
           </div>
 
-          <div className="row" style={{ gap: 10 }}>
+          <div className="row" style={{ gap: 'var(--s3)', alignItems: 'flex-start' }}>
             <label className="field" style={{ flex: 1 }}>
               <span>Desde</span>
               <input
@@ -249,7 +257,7 @@ export default function Medicinas() {
               placeholder="Ej: me calma como 2 horas y vuelve el dolor"
             />
           </label>
-          {draft.created_at && <p className="tiny muted">Anotado el {fmtDate(draft.created_at)}</p>}
+          {draft.created_at && <p className="meta">Anotado el {fmtDate(draft.created_at)}</p>}
         </Sheet>
       )}
     </>

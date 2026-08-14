@@ -1,3 +1,5 @@
+import type { IconName } from './components/Icon'
+
 export type TopicStatus = 'activo' | 'seguimiento' | 'resuelto'
 
 export type EntryKind =
@@ -76,16 +78,35 @@ export const KIND_LABEL: Record<EntryKind, string> = {
   otro: 'Otro',
 }
 
-export const KIND_EMOJI: Record<EntryKind, string> = {
-  sintoma: '🩺',
-  dolor: '⚡',
-  sangrado: '🩸',
-  medicamento: '💊',
-  animo: '🫂',
-  cita: '📅',
-  examen: '🧪',
-  pregunta: '❓',
-  otro: '📝',
+export const KIND_ICON: Record<EntryKind, IconName> = {
+  sintoma: 'sintoma',
+  dolor: 'dolor',
+  sangrado: 'sangrado',
+  medicamento: 'medicamento',
+  animo: 'animo',
+  cita: 'cita',
+  examen: 'examen',
+  pregunta: 'pregunta',
+  otro: 'nota',
+}
+
+/** Etiqueta corta para la retícula de registro rápido, donde no cabe la larga. */
+export const KIND_SHORT: Record<EntryKind, string> = {
+  sintoma: 'Síntoma',
+  dolor: 'Dolor',
+  sangrado: 'Sangrado',
+  medicamento: 'Medicamento',
+  animo: 'Ánimo',
+  cita: 'Cita',
+  examen: 'Examen',
+  pregunta: 'Pregunta',
+  otro: 'Otro',
+}
+
+/** Los tipos que hablan de algo que duele o sangra se pintan en rojo. */
+export const KIND_TONE: Partial<Record<EntryKind, 'alert'>> = {
+  dolor: 'alert',
+  sangrado: 'alert',
 }
 
 export const EFFECT_LABEL: Record<MedEffect, string> = {
@@ -176,15 +197,15 @@ export const DOC_LABEL: Record<DocKind, string> = {
   otro: 'Otro',
 }
 
-export const DOC_EMOJI: Record<DocKind, string> = {
-  radiografia: '🦴',
-  examen: '🧪',
-  orden: '📄',
-  formula: '📝',
-  resultado: '📊',
-  incapacidad: '🏥',
-  factura: '🧾',
-  otro: '📎',
+export const DOC_ICON: Record<DocKind, IconName> = {
+  radiografia: 'radiografia',
+  examen: 'examen',
+  orden: 'orden',
+  formula: 'formula',
+  resultado: 'resultado',
+  incapacidad: 'incapacidad',
+  factura: 'factura',
+  otro: 'adjunto',
 }
 
 export const REM_LABEL: Record<ReminderKind, string> = {
@@ -196,13 +217,13 @@ export const REM_LABEL: Record<ReminderKind, string> = {
   otro: 'Otro',
 }
 
-export const REM_EMOJI: Record<ReminderKind, string> = {
-  tomar: '💊',
-  reclamar: '🏪',
-  examen: '🧪',
-  documento: '📄',
-  cita: '📅',
-  otro: '🔔',
+export const REM_ICON: Record<ReminderKind, IconName> = {
+  tomar: 'medicamento',
+  reclamar: 'reclamar',
+  examen: 'examen',
+  documento: 'orden',
+  cita: 'cita',
+  otro: 'campana',
 }
 
 export const REPEAT_LABEL: Record<Repeat, string> = {

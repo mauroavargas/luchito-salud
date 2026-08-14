@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import ProfileSheet from '../components/ProfileSheet'
 import EntrySheet from '../components/EntrySheet'
+import Icon from '../components/Icon'
 import { AttachmentGrid } from '../components/Photos'
 import { useApp } from '../lib/store'
 import { buildSummary, summaryText } from '../lib/summary'
@@ -19,7 +20,7 @@ export default function Resumen() {
   const p = data.profile
   const hoy = fmtDate(new Date().toISOString())
 
-  async function copiar() {
+  async function compartir() {
     const text = summaryText(data, s)
     try {
       if (navigator.share) await navigator.share({ title: 'Resumen de salud', text })
@@ -28,38 +29,44 @@ export default function Resumen() {
         say('Resumen copiado. Pégalo donde lo necesites.')
       }
     } catch {
-      /* el usuario canceló */
+      /* la persona canceló el diálogo del sistema */
     }
   }
 
+  const badgeTema = (estado: string) =>
+    `badge${estado === 'resuelto' ? ' grey' : estado === 'activo' ? ' alert' : ''}`
+
   return (
     <>
-      <div className="topbar no-print">
+      <header className="topbar no-print">
         <div>
           <h1>Mi resumen</h1>
           <p className="sub">Para mostrarle al médico</p>
         </div>
-        <button className="btn ghost small-btn" onClick={() => setShowProfile(true)}>
+        <button className="btn ghost sm" onClick={() => setShowProfile(true)}>
+          <Icon name="usuario" size={16} />
           Mis datos
         </button>
-      </div>
+      </header>
 
-      <div className="row no-print" style={{ marginBottom: 18, gap: 8 }}>
-        <button className="btn small-btn" style={{ flex: 1 }} onClick={() => window.print()}>
-          🖨️ Imprimir / PDF
+      <div className="row no-print" style={{ marginBottom: 'var(--s6)' }}>
+        <button className="btn sm" style={{ flex: 1 }} onClick={() => window.print()}>
+          <Icon name="imprimir" size={17} />
+          Imprimir / PDF
         </button>
-        <button className="btn ghost small-btn" style={{ flex: 1 }} onClick={copiar}>
-          📤 Compartir texto
+        <button className="btn ghost sm" style={{ flex: 1 }} onClick={compartir}>
+          <Icon name="compartir" size={17} />
+          Compartir texto
         </button>
       </div>
 
       <div className="summary">
-        <div className="card" style={{ marginBottom: 16 }}>
-          <h2 className="print-only" style={{ marginBottom: 8 }}>
+        <div className="card">
+          <h2 className="print-only" style={{ marginBottom: 'var(--s2)' }}>
             Resumen de salud
           </h2>
-          {p?.full_name ? <strong style={{ fontSize: 18 }}>{p.full_name}</strong> : null}
-          <dl className="kv" style={{ marginTop: 8 }}>
+          {p?.full_name ? <strong style={{ fontSize: 17 }}>{p.full_name}</strong> : null}
+          <dl className="kv">
             {p?.birth_date && (
               <>
                 <dt>Nacimiento</dt>
@@ -90,21 +97,20 @@ export default function Resumen() {
             <dd>{hoy}</dd>
           </dl>
           {!p?.full_name && (
-            <button className="btn link no-print" style={{ marginTop: 6 }} onClick={() => setShowProfile(true)}>
-              + Completar mis datos
+            <button className="btn quiet no-print" style={{ marginTop: 'var(--s2)' }} onClick={() => setShowProfile(true)}>
+              <Icon name="mas" size={16} />
+              Completar mis datos
             </button>
           )}
         </div>
 
-        <div className="section-title" style={{ marginTop: 0 }}>
-          Motivos de consulta
-        </div>
+        <h2 className="section">Motivos de consulta</h2>
 
         {s.topics.length === 0 && s.general.length === 0 ? (
           <div className="empty">
             Aún no hay nada que resumir.
             <br />
-            Anota lo que te pasa desde la pestaña “Hoy”.
+            Anota lo que te pasa desde la pestaña Hoy.
           </div>
         ) : (
           <div className="stack">
@@ -113,29 +119,23 @@ export default function Resumen() {
               const desde = t.topic.started_on ?? t.firstAt
               const visibles = abierto ? t.entries : t.entries.slice(0, 3)
               return (
-                <div className="card" key={t.topic.id}>
-                  <div className="row wrap" style={{ alignItems: 'flex-start' }}>
+                <article className="card" key={t.topic.id}>
+                  <div className="row wrap top">
                     <h3 style={{ flex: 1, minWidth: 0 }}>{t.topic.name}</h3>
-                    <span
-                      className={`badge${
-                        t.topic.status === 'resuelto' ? ' grey' : t.topic.status === 'activo' ? ' alert' : ''
-                      }`}
-                    >
-                      {STATUS_LABEL[t.topic.status]}
-                    </span>
+                    <span className={badgeTema(t.topic.status)}>{STATUS_LABEL[t.topic.status]}</span>
                   </div>
 
-                  <p className="small muted" style={{ marginTop: 4 }}>
+                  <p className="meta" style={{ marginTop: 'var(--s1)' }}>
                     {desde ? `Desde ${fmtDate(desde)} (${since(desde)}). ` : ''}
-                    {t.count} episodio(s) anotado(s)
+                    {t.count} episodio{t.count === 1 ? '' : 's'} anotado{t.count === 1 ? '' : 's'}
                     {t.maxSeverity !== null
                       ? `. Intensidad máxima ${t.maxSeverity}/10, promedio ${t.avgSeverity}/10`
                       : ''}
-                    {t.photos > 0 ? `. ${t.photos} foto(s)` : ''}
+                    {t.photos > 0 ? `. ${t.photos} foto${t.photos === 1 ? '' : 's'}` : ''}
                   </p>
 
                   {t.topic.description && (
-                    <p className="small" style={{ marginTop: 8 }}>
+                    <p className="small measure" style={{ marginTop: 'var(--s3)' }}>
                       {t.topic.description}
                     </p>
                   )}
@@ -146,19 +146,23 @@ export default function Resumen() {
                         const fotos = data.attachments.filter((a) => a.entry_id === e.id)
                         return (
                           <li key={e.id}>
-                            <strong>{fmtDate(e.occurred_at)}</strong>
-                            {e.severity !== null && <span className="sev-pill" style={{ marginLeft: 8 }}>{e.severity}/10</span>}
+                            <time dateTime={e.occurred_at}>{fmtDate(e.occurred_at)}</time>
+                            {e.severity !== null && (
+                              <span className="sev-pill" style={{ marginLeft: 'var(--s2)' }}>
+                                {e.severity}/10
+                              </span>
+                            )}
                             <div>
                               {e.title || KIND_LABEL[e.kind]}
                               {e.note ? ` — ${e.note}` : ''}
                             </div>
                             {abierto && fotos.length > 0 && (
-                              <div style={{ marginTop: 8 }}>
+                              <div style={{ marginTop: 'var(--s2)' }}>
                                 <AttachmentGrid attachments={fotos} />
                               </div>
                             )}
                             {abierto && (
-                              <button className="btn link no-print tiny" onClick={() => setDetail(e)}>
+                              <button className="btn quiet no-print" onClick={() => setDetail(e)}>
                                 Editar este registro
                               </button>
                             )}
@@ -169,7 +173,7 @@ export default function Resumen() {
                   )}
 
                   {t.docs.length > 0 && (
-                    <p className="small" style={{ marginTop: 10 }}>
+                    <p className="small" style={{ marginTop: 'var(--s3)' }}>
                       <strong>Documentos: </strong>
                       {t.docs
                         .map((d) => `${DOC_LABEL[d.kind]} “${d.title}”${d.doc_date ? ` (${fmtDate(d.doc_date)})` : ''}`)
@@ -178,7 +182,7 @@ export default function Resumen() {
                   )}
 
                   {t.meds.length > 0 && (
-                    <p className="small" style={{ marginTop: 10 }}>
+                    <p className="small" style={{ marginTop: 'var(--s3)' }}>
                       <strong>Tratamiento probado: </strong>
                       {t.meds.map((m) => `${m.name} (${EFFECT_LABEL[m.effect].toLowerCase()})`).join(', ')}
                     </p>
@@ -186,25 +190,34 @@ export default function Resumen() {
 
                   {t.entries.length > 3 && (
                     <button
-                      className="btn link no-print"
-                      style={{ marginTop: 6 }}
+                      className="btn quiet no-print"
+                      style={{ marginTop: 'var(--s2)' }}
                       onClick={() => setOpenTopic(abierto ? null : t.topic.id)}
                     >
                       {abierto ? 'Ver menos' : `Ver los ${t.entries.length} registros y las fotos`}
+                      <Icon
+                        name="chevron"
+                        size={15}
+                        style={{ transform: abierto ? 'rotate(-90deg)' : 'rotate(90deg)' }}
+                      />
                     </button>
                   )}
-                </div>
+                </article>
               )
             })}
 
             {s.general.length > 0 && (
-              <div className="card">
+              <article className="card">
                 <h3>Otros registros</h3>
                 <ul className="timeline">
                   {s.general.slice(0, 8).map((e) => (
                     <li key={e.id}>
-                      <strong>{fmtDate(e.occurred_at)}</strong>
-                      {e.severity !== null && <span className="sev-pill" style={{ marginLeft: 8 }}>{e.severity}/10</span>}
+                      <time dateTime={e.occurred_at}>{fmtDate(e.occurred_at)}</time>
+                      {e.severity !== null && (
+                        <span className="sev-pill" style={{ marginLeft: 'var(--s2)' }}>
+                          {e.severity}/10
+                        </span>
+                      )}
                       <div>
                         {e.title || KIND_LABEL[e.kind]}
                         {e.note ? ` — ${e.note}` : ''}
@@ -212,18 +225,18 @@ export default function Resumen() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </article>
             )}
           </div>
         )}
 
         {s.medsActivos.length > 0 && (
           <>
-            <div className="section-title">Medicamentos que toma ahora</div>
+            <h2 className="section">Medicamentos que toma ahora</h2>
             <div className="card">
-              <ul style={{ margin: 0, paddingLeft: 20 }}>
+              <ul className="list-plain">
                 {s.medsActivos.map((m) => (
-                  <li key={m.id} style={{ marginBottom: 6 }}>
+                  <li key={m.id}>
                     <strong>{m.name}</strong>
                     {m.dose ? ` ${m.dose}` : ''}
                     {m.frequency ? `, ${m.frequency}` : ''} — {EFFECT_LABEL[m.effect].toLowerCase()}
@@ -237,7 +250,7 @@ export default function Resumen() {
 
         {s.medsFallidos.length > 0 && (
           <>
-            <div className="section-title">Ya probó y no le sirvió</div>
+            <h2 className="section">Ya probó y no le sirvió</h2>
             <div className="card" style={{ borderColor: 'var(--alert)' }}>
               <p className="small">
                 {s.medsFallidos.map((m) => `${m.name} (${EFFECT_LABEL[m.effect].toLowerCase()})`).join(' · ')}
@@ -248,11 +261,11 @@ export default function Resumen() {
 
         {s.adherencia.length > 0 && (
           <>
-            <div className="section-title">Cumplimiento del tratamiento</div>
+            <h2 className="section">Cumplimiento del tratamiento</h2>
             <div className="card">
-              <ul style={{ margin: 0, paddingLeft: 20 }}>
+              <ul className="list-plain">
                 {s.adherencia.map((a) => (
-                  <li key={a.reminder.id} style={{ marginBottom: 6 }}>
+                  <li key={a.reminder.id}>
                     <strong>{a.reminder.title}</strong>: {a.done} de los últimos {a.days} días
                   </li>
                 ))}
@@ -263,13 +276,15 @@ export default function Resumen() {
 
         {s.tramites.length > 0 && (
           <>
-            <div className="section-title">Trámites pendientes</div>
+            <h2 className="section">Trámites pendientes</h2>
             <div className="card" style={{ borderColor: 'var(--warn)' }}>
-              <ul style={{ margin: 0, paddingLeft: 20 }}>
+              <ul className="list-plain">
                 {s.tramites.map((t) => (
-                  <li key={t.reminder.id} style={{ marginBottom: 6 }}>
+                  <li key={t.reminder.id}>
                     {REM_LABEL[t.reminder.kind]}: <strong>{t.reminder.title}</strong>
-                    {t.overdue > 0 && <span style={{ color: 'var(--alert)' }}> — atrasado {t.overdue} día(s)</span>}
+                    {t.overdue > 0 && (
+                      <span style={{ color: 'var(--alert-ink)' }}> — atrasado {t.overdue} día(s)</span>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -279,13 +294,13 @@ export default function Resumen() {
 
         {s.documents.filter((d) => !d.topic_id).length > 0 && (
           <>
-            <div className="section-title">Otros documentos guardados</div>
+            <h2 className="section">Otros documentos guardados</h2>
             <div className="card">
-              <ul style={{ margin: 0, paddingLeft: 20 }}>
+              <ul className="list-plain">
                 {s.documents
                   .filter((d) => !d.topic_id)
                   .map((d) => (
-                    <li key={d.id} style={{ marginBottom: 5 }}>
+                    <li key={d.id}>
                       {DOC_LABEL[d.kind]}: <strong>{d.title}</strong>
                       {d.doc_date ? ` (${fmtDate(d.doc_date)})` : ''}
                     </li>
@@ -295,18 +310,18 @@ export default function Resumen() {
           </>
         )}
 
-        <div className="section-title">Preguntas para el médico</div>
+        <h2 className="section">Preguntas para el médico</h2>
         <div className="card">
           {s.preguntas.length === 0 ? (
             <p className="small muted">No hay preguntas anotadas todavía.</p>
           ) : (
-            <ul style={{ margin: 0, paddingLeft: 20 }}>
+            <ul className="list-plain">
               {s.preguntas.map((q) => (
-                <li key={q.id} style={{ marginBottom: 8 }}>
+                <li key={q.id} style={{ marginBottom: 'var(--s2)' }}>
                   {q.title || q.note}
                   <button
-                    className="btn link no-print"
-                    style={{ marginLeft: 6, fontSize: 13 }}
+                    className="btn quiet no-print"
+                    style={{ marginLeft: 'var(--s2)', fontSize: 13.5 }}
                     onClick={() => void editEntry(q.id, { resolved: true })}
                   >
                     ya me la respondieron
@@ -315,12 +330,17 @@ export default function Resumen() {
               ))}
             </ul>
           )}
-          <button className="btn ghost small-btn no-print" style={{ marginTop: 12 }} onClick={() => setNewQuestion(true)}>
-            + Anotar una pregunta
+          <button
+            className="btn ghost sm no-print"
+            style={{ marginTop: 'var(--s4)' }}
+            onClick={() => setNewQuestion(true)}
+          >
+            <Icon name="mas" size={16} />
+            Anotar una pregunta
           </button>
         </div>
 
-        <p className="tiny muted center" style={{ margin: '26px 0 10px' }}>
+        <p className="meta center" style={{ margin: 'var(--s8) 0 var(--s3)' }}>
           Documento hecho por la paciente. No reemplaza una valoración médica.
         </p>
       </div>

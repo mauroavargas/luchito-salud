@@ -42,6 +42,9 @@ export function pendingReminders(data: Snapshot, today = todayKey()): Pending[] 
       continue
     }
 
+    // Un recordatorio repetido que empieza más adelante todavía no aplica.
+    if (r.due_on && daysBetween(r.due_on, today) < 0) continue
+
     const periodo = r.repeat === 'daily' ? 1 : r.repeat === 'weekly' ? 7 : 30
     const desde = last ? daysBetween(last, today) : periodo
     if (desde < periodo) {
@@ -55,12 +58,19 @@ export function pendingReminders(data: Snapshot, today = todayKey()): Pending[] 
 }
 
 /** Cuántas veces cumplió un recordatorio repetido en los últimos N días. */
-export function adherence(data: Snapshot, reminderId: string, days = 30): { done: number; days: number } {
-  const limite = new Date()
-  limite.setDate(limite.getDate() - days)
-  const done = data.reminderLogs.filter(
-    (l) => l.reminder_id === reminderId && +new Date(l.done_on) >= +limite,
-  ).length
+export function adherence(
+  data: Snapshot,
+  reminderId: string,
+  days = 30,
+  today = todayKey(),
+): { done: number; days: number } {
+  // Comparación entre fechas sin hora: la hora del día no debe decidir si un
+  // día entra o no en la ventana.
+  const done = data.reminderLogs.filter((l) => {
+    if (l.reminder_id !== reminderId) return false
+    const atras = daysBetween(l.done_on, today)
+    return atras >= 0 && atras < days
+  }).length
   return { done, days }
 }
 

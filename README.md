@@ -40,6 +40,32 @@ Los datos y las fotos viven en Supabase, en tablas con *row level security*: cad
 leer y escribir lo suyo, y el bucket de archivos es privado (se accede con URLs firmadas temporales).
 Este repositorio solo tiene código; ningún dato de salud pasa por aquí.
 
+## Diseño
+
+El mundo visual es un cuaderno clínico: papel cálido, tinta profunda, **Newsreader**
+(serif de periódico) para los títulos y **Public Sans** para los datos. Las dos son
+libres y se sirven desde el propio sitio, así que no hay peticiones a terceros ni
+fuentes que tarden en cargar.
+
+- Colores derivados en OKLCH y fijados en hex tras verificar contraste WCAG AA en
+  ambos temas. Los valores y su razón están comentados en `src/styles.css`.
+- Iconos propios en `src/components/Icon.tsx`: un solo trazo, una sola retícula.
+  Nada de emoji, que cambian de forma en cada teléfono y no se pueden teñir.
+- Tema claro/oscuro compuestos por separado, con opción manual en *Mis datos*.
+- Movimiento: curvas propias, 140–320 ms, `scale(0.97)` al presionar y un solo
+  momento con autoría (marcar un pendiente como hecho). Respeta
+  `prefers-reduced-motion`.
+
+## Pruebas
+
+```bash
+npm test        # lógica: avisos, resumen, fechas, calendario (69 casos)
+npm run e2e     # flujos reales en WebKit con viewport de iPhone (10 casos)
+```
+
+Los tests de lógica fijan la zona horaria en `America/Bogotá`: media app depende de
+qué día es "hoy". Los E2E crean una cuenta nueva por caso contra el Supabase real.
+
 ## Desarrollo
 
 ```bash

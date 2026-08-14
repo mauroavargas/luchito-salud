@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import DocumentSheet from '../components/DocumentSheet'
+import Icon from '../components/Icon'
 import { useApp } from '../lib/store'
 import { signedUrl } from '../lib/data'
-import { DOC_EMOJI, DOC_LABEL } from '../types'
+import { DOC_ICON, DOC_LABEL } from '../types'
 import type { DocKind, Document } from '../types'
 import { fmtDate } from '../lib/format'
 
@@ -20,34 +21,28 @@ function DocCard({ doc, onOpen }: { doc: Document; onOpen: () => void }) {
 
   return (
     <div className="card">
-      <div className="row" style={{ alignItems: 'flex-start' }}>
-        <div className="thumb" style={{ flexShrink: 0 }}>
-          {esImagen && url ? (
-            <img src={url} alt={doc.title} />
-          ) : (
-            <div style={{ display: 'grid', placeItems: 'center', height: '100%', fontSize: 28 }}>
-              {DOC_EMOJI[doc.kind]}
-            </div>
-          )}
+      <div className="row top">
+        <div className="thumb" style={{ flexShrink: 0, display: 'grid', placeItems: 'center' }}>
+          {esImagen && url ? <img src={url} alt="" /> : <Icon name={DOC_ICON[doc.kind]} size={26} />}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <strong style={{ fontSize: 16 }}>{doc.title}</strong>
-          <p className="tiny muted" style={{ marginTop: 3 }}>
+          <strong style={{ fontSize: 15.5 }}>{doc.title}</strong>
+          <p className="meta" style={{ marginTop: 2 }}>
             {DOC_LABEL[doc.kind]}
             {doc.doc_date ? ` · ${fmtDate(doc.doc_date)}` : ''}
           </p>
           {doc.notes && (
-            <p className="small" style={{ marginTop: 6 }}>
+            <p className="small measure" style={{ marginTop: 'var(--s2)' }}>
               {doc.notes}
             </p>
           )}
-          <div className="row" style={{ marginTop: 8, gap: 4 }}>
+          <div className="row" style={{ marginTop: 'var(--s2)', gap: 'var(--s4)' }}>
             {url && (
-              <a className="btn link" href={url} target="_blank" rel="noreferrer">
+              <a className="btn quiet" href={url} target="_blank" rel="noreferrer">
                 Abrir
               </a>
             )}
-            <button className="btn link" onClick={onOpen}>
+            <button className="btn quiet" onClick={onOpen}>
               Editar
             </button>
           </div>
@@ -75,29 +70,37 @@ export default function Archivo() {
 
   return (
     <>
-      <div className="topbar">
+      <header className="topbar">
         <div>
           <h1>Archivo</h1>
-          <p className="sub">{data.documents.length} documento(s) guardado(s)</p>
+          <p className="sub">
+            {data.documents.length === 0
+              ? 'Sin documentos todavía'
+              : `${data.documents.length} documento${data.documents.length === 1 ? '' : 's'} guardado${
+                  data.documents.length === 1 ? '' : 's'
+                }`}
+          </p>
         </div>
-        <button className="btn small-btn" onClick={() => setNuevo(true)}>
-          + Subir
+        <button className="btn sm" onClick={() => setNuevo(true)}>
+          <Icon name="mas" size={16} />
+          Subir
         </button>
-      </div>
+      </header>
 
-      <p className="small muted" style={{ marginBottom: 16 }}>
+      <p className="small muted measure" style={{ marginBottom: 'var(--s5)' }}>
         Todo en un solo lugar: radiografías, órdenes, fórmulas, resultados e incapacidades. Así no
         toca buscar papeles cuando el médico los pida.
       </p>
 
       {kindsPresentes.length > 1 && (
-        <div className="chips" style={{ marginBottom: 16 }}>
+        <div className="chips" style={{ marginBottom: 'var(--s5)' }}>
           <button className="chip" aria-pressed={filtro === 'todos'} onClick={() => setFiltro('todos')}>
             Todo
           </button>
           {kindsPresentes.map((k) => (
             <button key={k} className="chip" aria-pressed={filtro === k} onClick={() => setFiltro(k)}>
-              {DOC_EMOJI[k]} {DOC_LABEL[k]}
+              <Icon name={DOC_ICON[k]} size={16} />
+              {DOC_LABEL[k]}
             </button>
           ))}
         </div>
@@ -108,10 +111,11 @@ export default function Archivo() {
           Todavía no hay documentos.
           <br />
           Empieza por lo que tengas a la mano: una radiografía, una fórmula, una orden.
-          <br />
-          <button className="btn small-btn" style={{ marginTop: 14 }} onClick={() => setNuevo(true)}>
-            Subir el primero
-          </button>
+          <div>
+            <button className="btn sm" style={{ marginTop: 'var(--s4)' }} onClick={() => setNuevo(true)}>
+              Subir el primero
+            </button>
+          </div>
         </div>
       ) : (
         <div className="stack">

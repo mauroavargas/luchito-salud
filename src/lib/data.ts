@@ -70,7 +70,14 @@ export async function fetchAll(): Promise<Snapshot> {
       supabase.from('profiles').select('*').maybeSingle(),
     ])
   const err =
-    topics.error || entries.error || medications.error || attachments.error || documents.error || reminders.error
+    topics.error ||
+    entries.error ||
+    medications.error ||
+    attachments.error ||
+    documents.error ||
+    reminders.error ||
+    reminderLogs.error ||
+    profile.error
   if (err) throw err
   const snap: Snapshot = {
     topics: (topics.data ?? []) as Topic[],
@@ -207,7 +214,10 @@ export async function uploadAttachment(userId: string, entryId: string, file: Fi
 }
 
 export async function deleteAttachment(att: Attachment) {
-  await supabase.storage.from(BUCKET).remove([att.path])
+  // Borrar primero el archivo: si falla, la fila sigue ahí y se puede reintentar.
+  // Al revés quedaría un archivo huérfano que nadie puede volver a encontrar.
+  const rm = await supabase.storage.from(BUCKET).remove([att.path])
+  if (rm.error) throw rm.error
   const { error } = await supabase.from('attachments').delete().eq('id', att.id)
   if (error) throw error
 }
@@ -253,7 +263,8 @@ export async function updateDocument(id: string, patch: Partial<Document>) {
 }
 
 export async function deleteDocument(doc: Document) {
-  await supabase.storage.from(BUCKET).remove([doc.path])
+  const rm = await supabase.storage.from(BUCKET).remove([doc.path])
+  if (rm.error) throw rm.error
   const { error } = await supabase.from('documents').delete().eq('id', doc.id)
   if (error) throw error
 }
@@ -300,6 +311,17 @@ export async function unlogReminder(reminderId: string, onDay: string) {
     .eq('reminder_id', reminderId)
     .eq('done_on', onDay)
   if (error) throw error
+
+  // Devolver last_done_on al día anterior que sí quedó marcado, si hay alguno.
+  const { data } = await supabase
+    .from('reminder_logs')
+    .select('done_on')
+    .eq('reminder_id', reminderId)
+    .order('done_on', { ascending: false })
+    .limit(1)
+  const previo = (data?.[0]?.done_on as string | undefined) ?? null
+  await supabase.from('reminders').update({ last_done_on: previo }).eq('id', reminderId)
+  return previo
 }
 
 /* ---------------- Bandeja de salida (sin internet) ---------------- */

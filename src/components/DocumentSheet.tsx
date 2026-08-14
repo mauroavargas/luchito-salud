@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
 import Sheet from './Sheet'
+import Icon from './Icon'
 import { useApp } from '../lib/store'
-import { DOC_EMOJI, DOC_LABEL } from '../types'
+import { DOC_ICON, DOC_LABEL } from '../types'
 import type { DocKind, Document } from '../types'
 import { shrinkImage } from '../lib/image'
 import { todayKey } from '../lib/nudges'
@@ -67,8 +68,7 @@ export default function DocumentSheet({ doc, onClose }: { doc?: Document; onClos
           </button>
           {doc && (
             <button
-              className="btn link"
-              style={{ color: 'var(--alert)' }}
+              className="btn quiet danger"
               onClick={async () => {
                 if (!confirm('¿Borrar este documento? No se puede recuperar.')) return
                 await removeDocument(doc)
@@ -82,9 +82,10 @@ export default function DocumentSheet({ doc, onClose }: { doc?: Document; onClos
       }
     >
       {!doc && (
-        <div style={{ marginBottom: 18 }}>
+        <div style={{ marginBottom: 'var(--s6)' }}>
           <button className="btn ghost block" onClick={() => inputRef.current?.click()} disabled={busy}>
-            {file ? `✅ ${file.name.slice(0, 34)}` : '📷 Escoger foto o archivo (PDF)'}
+            <Icon name={file ? 'check' : 'camara'} size={18} />
+            {file ? file.name.slice(0, 32) : 'Escoger foto o archivo (PDF)'}
           </button>
           <input
             ref={inputRef}
@@ -102,20 +103,19 @@ export default function DocumentSheet({ doc, onClose }: { doc?: Document; onClos
               if (!title.trim()) setTitle(ready.name.replace(/\.[^.]+$/, '').slice(0, 60))
             }}
           />
-          <p className="tiny muted" style={{ marginTop: 8 }}>
+          <p className="meta" style={{ marginTop: 'var(--s2)' }}>
             Sirve para radiografías, órdenes, fórmulas, resultados de laboratorio o incapacidades.
           </p>
         </div>
       )}
 
-      <div style={{ marginBottom: 16 }}>
-        <span className="section-title" style={{ marginTop: 0 }}>
-          ¿Qué es?
-        </span>
+      <div style={{ marginBottom: 'var(--s5)' }}>
+        <h3 style={{ marginBottom: 'var(--s3)' }}>¿Qué es?</h3>
         <div className="chips">
           {KINDS.map((k) => (
             <button key={k} className="chip" aria-pressed={kind === k} onClick={() => setKind(k)}>
-              {DOC_EMOJI[k]} {DOC_LABEL[k]}
+              <Icon name={DOC_ICON[k]} size={17} />
+              {DOC_LABEL[k]}
             </button>
           ))}
         </div>

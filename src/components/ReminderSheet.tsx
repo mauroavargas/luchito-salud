@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import Sheet from './Sheet'
+import Icon from './Icon'
 import { useApp } from '../lib/store'
-import { REM_EMOJI, REM_LABEL, REPEAT_LABEL } from '../types'
+import { REM_ICON, REM_LABEL, REPEAT_LABEL } from '../types'
 import type { Reminder, ReminderKind, Repeat } from '../types'
 import { downloadIcs } from '../lib/ics'
 import { todayKey } from '../lib/nudges'
@@ -69,14 +70,14 @@ export default function ReminderSheet({
           {reminder && (
             <>
               <button className="btn ghost block" onClick={() => downloadIcs(reminder)}>
-                📅 Agregarlo al calendario del celular
+                <Icon name="calendario-mas" size={18} />
+                Agregarlo al calendario del celular
               </button>
-              <p className="tiny muted center">
+              <p className="meta center">
                 Así el celular es el que te avisa, aunque no tengas la app abierta.
               </p>
               <button
-                className="btn link"
-                style={{ color: 'var(--alert)' }}
+                className="btn quiet danger"
                 onClick={async () => {
                   if (!confirm('¿Borrar este recordatorio?')) return
                   await removeReminder(reminder.id)
@@ -91,10 +92,8 @@ export default function ReminderSheet({
       }
     >
       {!reminder && (
-        <div style={{ marginBottom: 18 }}>
-          <span className="section-title" style={{ marginTop: 0 }}>
-            Los más comunes
-          </span>
+        <div style={{ marginBottom: 'var(--s6)' }}>
+          <h3 style={{ marginBottom: 'var(--s3)' }}>Los más comunes</h3>
           <div className="chips">
             {PLANTILLAS.map((p) => (
               <button
@@ -102,7 +101,8 @@ export default function ReminderSheet({
                 className="chip"
                 onClick={() => setForm({ ...form, ...p })}
               >
-                {REM_EMOJI[p.kind]} {p.title}
+                <Icon name={REM_ICON[p.kind]} size={17} />
+                {p.title}
               </button>
             ))}
           </div>
@@ -119,23 +119,20 @@ export default function ReminderSheet({
         />
       </label>
 
-      <div style={{ marginBottom: 16 }}>
-        <span className="section-title" style={{ marginTop: 0 }}>
-          Tipo
-        </span>
+      <div style={{ marginBottom: 'var(--s5)' }}>
+        <h3 style={{ marginBottom: 'var(--s3)' }}>Tipo</h3>
         <div className="chips">
           {KINDS.map((k) => (
             <button key={k} className="chip" aria-pressed={form.kind === k} onClick={() => setForm({ ...form, kind: k })}>
-              {REM_EMOJI[k]} {REM_LABEL[k]}
+              <Icon name={REM_ICON[k]} size={17} />
+              {REM_LABEL[k]}
             </button>
           ))}
         </div>
       </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <span className="section-title" style={{ marginTop: 0 }}>
-          ¿Cada cuánto?
-        </span>
+      <div style={{ marginBottom: 'var(--s5)' }}>
+        <h3 style={{ marginBottom: 'var(--s3)' }}>¿Cada cuánto?</h3>
         <div className="chips">
           {REPEATS.map((rp) => (
             <button
@@ -150,7 +147,7 @@ export default function ReminderSheet({
         </div>
       </div>
 
-      <div className="row" style={{ gap: 10 }}>
+      <div className="row" style={{ gap: 'var(--s3)', alignItems: 'flex-start' }}>
         <label className="field" style={{ flex: 1 }}>
           <span>{form.repeat === 'none' ? '¿Para qué día?' : 'Empezando el'}</span>
           <input
