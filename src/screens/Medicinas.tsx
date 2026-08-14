@@ -160,7 +160,7 @@ export default function Medicinas() {
               placeholder="Ej: Ibuprofeno 400 mg"
             />
           </label>
-          <div className="row" style={{ gap: 'var(--s3)', alignItems: 'flex-start' }}>
+          <div className="pair">
             <label className="field" style={{ flex: 1 }}>
               <span>Dosis</span>
               <input
@@ -197,7 +197,7 @@ export default function Medicinas() {
             </div>
           </div>
 
-          <div className="row" style={{ gap: 'var(--s3)', alignItems: 'flex-start' }}>
+          <div className="pair">
             <label className="field" style={{ flex: 1 }}>
               <span>Desde</span>
               <input

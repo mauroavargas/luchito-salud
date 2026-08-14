@@ -10,8 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "e2e": "playwright test app",
+    "e2e:ui": "playwright test --ui",
+    "capturas": "playwright test capturas"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",

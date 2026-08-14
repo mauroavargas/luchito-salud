@@ -5,7 +5,7 @@ import Icon from '../components/Icon'
 import { AttachmentGrid } from '../components/Photos'
 import { useApp } from '../lib/store'
 import { buildSummary, summaryText } from '../lib/summary'
-import { DOC_LABEL, EFFECT_LABEL, KIND_LABEL, REM_LABEL, STATUS_LABEL } from '../types'
+import { DOC_LABEL, EFFECT_LABEL, KIND_LABEL, STATUS_LABEL } from '../types'
 import type { Entry } from '../types'
 import { fmtDate, since } from '../lib/format'
 
@@ -281,9 +281,12 @@ export default function Resumen() {
               <ul className="list-plain">
                 {s.tramites.map((t) => (
                   <li key={t.reminder.id}>
-                    {REM_LABEL[t.reminder.kind]}: <strong>{t.reminder.title}</strong>
+                    <strong>{t.reminder.title}</strong>
                     {t.overdue > 0 && (
-                      <span style={{ color: 'var(--alert-ink)' }}> — atrasado {t.overdue} día(s)</span>
+                      <span style={{ color: 'var(--alert-ink)' }}>
+                        {' '}
+                        — atrasado {t.overdue} día{t.overdue === 1 ? '' : 's'}
+                      </span>
                     )}
                   </li>
                 ))}

@@ -561,15 +561,18 @@ textarea:focus-visible {
   color: var(--alert-ink);
 }
 
-/* escala de intensidad */
+/* Escala de intensidad. Once casillas en una fila no caben en un teléfono:
+   con aspect-ratio cuadrado el mínimo de cada casilla empujaba el 10 fuera de
+   la pantalla. En dos filas de seis quedan casillas anchas, que es lo que
+   necesita un pulgar cuando a uno le duele algo. */
 .scale {
   display: grid;
-  grid-template-columns: repeat(11, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--s2);
 }
 .scale button {
-  aspect-ratio: 1;
-  min-height: 34px;
+  min-width: 0;
+  height: 46px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line-strong);
   background: var(--surface);
@@ -871,15 +874,20 @@ textarea:focus-visible {
 }
 
 .sheet {
+  /* La hoja NO scrollea: scrollea su cuerpo. Con la cabecera sticky dentro
+     del contenedor que scrollea, en Safari el texto se colaba por encima del
+     título al arrastrar. Ahora la cabecera está fuera del área de scroll y
+     eso no puede pasar. */
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 620px;
   max-height: 92dvh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
   background: var(--paper);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   box-shadow: var(--shadow-sheet);
-  padding: var(--s2) var(--s4) calc(var(--s6) + env(safe-area-inset-bottom));
+  padding-top: var(--s2);
 }
 .scrim[data-state='open'] .sheet {
   animation: sheet-in var(--t-sheet) var(--ease-drawer) both;
@@ -898,15 +906,40 @@ textarea:focus-visible {
   margin: var(--s2) auto var(--s1);
 }
 .sheet-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--s3);
-  padding: var(--s3) 0 var(--s4);
+  padding: var(--s3) var(--s4) var(--s4);
   background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--s5) var(--s4) calc(var(--s6) + env(safe-area-inset-bottom));
+}
+
+/* Dos campos que caben lado a lado solo si de verdad caben. En pantalla
+   angosta se apilan: es preferible bajar el pulgar a leer etiquetas partidas
+   y cajas montadas una encima de otra. */
+.pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: var(--s3);
+}
+.pair > * {
+  min-width: 0;
+}
+@media (min-width: 400px) {
+  .pair {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* ---------- fotos y documentos ---------- */

@@ -21,7 +21,7 @@ export default function Hoy({
   goResumen: () => void
   goMedicinas: () => void
 }) {
-  const { data, offline, pendingCount, session, markReminder, say } = useApp()
+  const { data, offline, pendingCount, markReminder, say } = useApp()
   const [entryKind, setEntryKind] = useState<EntryKind | null>(null)
   const [entryTopic, setEntryTopic] = useState<string | null>(null)
   const [remSheet, setRemSheet] = useState<Reminder | 'nuevo' | null>(null)
@@ -35,7 +35,8 @@ export default function Hoy({
   const nudges = useMemo(() => buildNudges(data), [data])
   const visibles = verTodo ? nudges : nudges.slice(0, 3)
   const recientes = data.entries.slice(0, 3)
-  const nombre = data.profile?.full_name?.split(' ')[0] ?? session?.user.email?.split('@')[0] ?? ''
+  // Solo el nombre de pila si lo puso. Un correo no es un saludo.
+  const nombre = data.profile?.full_name?.trim().split(/\s+/)[0] ?? ''
 
   function hacer(action: NudgeAction) {
     switch (action.type) {

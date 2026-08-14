@@ -147,7 +147,7 @@ export default function ReminderSheet({
         </div>
       </div>
 
-      <div className="row" style={{ gap: 'var(--s3)', alignItems: 'flex-start' }}>
+      <div className="pair">
         <label className="field" style={{ flex: 1 }}>
           <span>{form.repeat === 'none' ? '¿Para qué día?' : 'Empezando el'}</span>
           <input

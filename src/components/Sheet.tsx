@@ -83,8 +83,10 @@ export default function Sheet({
             Cerrar
           </button>
         </div>
-        {children}
-        {footer && <div style={{ marginTop: 'var(--s6)' }}>{footer}</div>}
+        <div className="sheet-body">
+          {children}
+          {footer && <div style={{ marginTop: 'var(--s6)' }}>{footer}</div>}
+        </div>
       </div>
     </div>
   )

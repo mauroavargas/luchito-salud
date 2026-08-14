@@ -59,9 +59,16 @@ fuentes que tarden en cargar.
 ## Pruebas
 
 ```bash
-npm test        # lógica: avisos, resumen, fechas, calendario (69 casos)
-npm run e2e     # flujos reales en WebKit con viewport de iPhone (10 casos)
+npm test         # lógica: avisos, resumen, fechas, calendario (69 casos)
+npm run e2e      # flujos reales en WebKit con viewport de iPhone (14 casos)
+npm run capturas # deja en capturas/ una foto de cada pantalla y cada hoja
 ```
+
+`npm run capturas` no afirma nada: existe para *mirar* la interfaz a tamaño de
+teléfono. Los defectos de maquetación no los ve ninguna aserción de contenido, y
+revisar en una ventana de escritorio no sustituye verlo en 390 px de ancho.
+Los tres tests de `cabe en la pantalla` sí miden: fallan si algo se sale de ancho
+o si el contenido se pasa por debajo del título de una hoja.
 
 Los tests de lógica fijan la zona horaria en `America/Bogotá`: media app depende de
 qué día es "hoy". Los E2E crean una cuenta nueva por caso contra el Supabase real.

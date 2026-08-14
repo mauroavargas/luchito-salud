@@ -77,7 +77,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
         <span>Nombre completo</span>
         <input type="text" value={form.full_name ?? ''} onChange={set('full_name')} />
       </label>
-      <div className="row" style={{ gap: 'var(--s3)', alignItems: 'flex-start' }}>
+      <div className="pair">
         <label className="field" style={{ flex: 1 }}>
           <span>Fecha de nacimiento</span>
           <input type="date" value={form.birth_date ?? ''} onChange={set('birth_date')} />

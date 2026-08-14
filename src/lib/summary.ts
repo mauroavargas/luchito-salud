@@ -1,6 +1,6 @@
 import type { Snapshot } from './data'
 import type { Document, Entry, Medication, Reminder, Topic } from '../types'
-import { DOC_LABEL, EFFECT_LABEL, KIND_LABEL, REM_LABEL } from '../types'
+import { DOC_LABEL, EFFECT_LABEL, KIND_LABEL } from '../types'
 import { fmtDate, severityLabel, since } from './format'
 import { adherence, pendingReminders } from './nudges'
 
@@ -144,7 +144,7 @@ export function summaryText(data: Snapshot, s: Summary): string {
   if (s.tramites.length) {
     L.push('— TRÁMITES PENDIENTES —')
     for (const t of s.tramites) {
-      L.push(`· ${REM_LABEL[t.reminder.kind]}: ${t.reminder.title}` + (t.overdue > 0 ? ` (atrasado ${t.overdue} días)` : ''))
+      L.push(`· ${t.reminder.title}` + (t.overdue > 0 ? ` (atrasado ${t.overdue} días)` : ''))
     }
     L.push('')
   }

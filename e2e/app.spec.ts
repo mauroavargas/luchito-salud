@@ -183,3 +183,72 @@ test.describe('apariencia', () => {
     await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.*/)
   })
 })
+
+test.describe('cabe en la pantalla', () => {
+  // El defecto que se escapó: la escala de intensidad medía más que el ancho
+  // del teléfono y el 10 quedaba fuera. Ninguna aserción de contenido lo ve;
+  // hay que medir.
+  async function sinDesborde(page: import('@playwright/test').Page, donde: string) {
+    const desbordes = await page.evaluate(() => {
+      const limite = document.documentElement.clientWidth
+      const malos: string[] = []
+      const raiz = document.querySelector('.sheet-body') ?? document.querySelector('main.app')
+      if (!raiz) return ['no encontré el contenedor']
+      if (raiz.scrollWidth > raiz.clientWidth + 1) {
+        malos.push(`contenedor: ${raiz.scrollWidth} > ${raiz.clientWidth}`)
+      }
+      raiz.querySelectorAll('*').forEach((el) => {
+        const r = el.getBoundingClientRect()
+        if (r.width === 0) return
+        if (r.right > limite + 1 || r.left < -1) {
+          malos.push(`${el.tagName.toLowerCase()}.${(el.className || '').toString().split(' ')[0]}`)
+        }
+      })
+      return [...new Set(malos)]
+    })
+    expect(desbordes, `desborde en ${donde}`).toEqual([])
+  }
+
+  test('ninguna pantalla se sale de ancho', async ({ page }) => {
+    await crearCuenta(page)
+    for (const tab of ['Hoy', 'Historial', 'Archivo', 'Medicinas', 'Resumen']) {
+      await irA(page, tab)
+      await sinDesborde(page, `pestaña ${tab}`)
+    }
+  })
+
+  test('ninguna hoja se sale de ancho, ni con la escala de intensidad', async ({ page }) => {
+    await crearCuenta(page)
+
+    await page.getByRole('button', { name: 'Dolor', exact: true }).click()
+    await hojaAbierta(page, '¿Qué pasó?')
+    await sinDesborde(page, 'hoja de registro')
+    // El 10 tiene que ser alcanzable, no solo existir.
+    await expect(page.getByRole('button', { name: 'Intensidad 10 de 10' })).toBeInViewport()
+    await page.getByRole('button', { name: 'Cerrar' }).click()
+
+    await page.getByRole('button', { name: 'Recordatorio' }).click()
+    await hojaAbierta(page, 'Nuevo recordatorio')
+    await sinDesborde(page, 'hoja de recordatorio')
+    await page.getByRole('button', { name: 'Cerrar' }).click()
+
+    await page.getByRole('button', { name: 'Mis datos y ajustes' }).click()
+    await hojaAbierta(page, 'Mis datos y ajustes')
+    await sinDesborde(page, 'hoja de ajustes')
+  })
+
+  test('el título de la hoja no deja pasar el contenido por debajo', async ({ page }) => {
+    await crearCuenta(page)
+    await page.getByRole('button', { name: 'Mis datos y ajustes' }).click()
+    await hojaAbierta(page, 'Mis datos y ajustes')
+
+    await page.locator('.sheet-body').evaluate((el) => el.scrollTo({ top: 400 }))
+    await page.waitForTimeout(300)
+
+    // Nada del cuerpo puede quedar por encima del borde inferior del título.
+    const bordeTitulo = (await page.locator('.sheet-head').boundingBox())!.y +
+      (await page.locator('.sheet-head').boundingBox())!.height
+    const arribaCuerpo = (await page.locator('.sheet-body').boundingBox())!.y
+    expect(arribaCuerpo).toBeGreaterThanOrEqual(bordeTitulo - 1)
+  })
+})
