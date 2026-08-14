@@ -476,3 +476,26 @@ textarea:focus {
   a { text-decoration: none; color: inherit; }
 }
 .print-only { display: none; }
+
+/* punto de aviso en la pestaña Hoy */
+.dot {
+  position: absolute;
+  top: -5px;
+  left: 13px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--alert);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+}
+
+.nav {
+  grid-template-columns: repeat(5, 1fr);
+}
+.nav button { font-size: 10.5px; }
+.nav button .ico { font-size: 19px; }

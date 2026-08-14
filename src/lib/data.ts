@@ -1,15 +1,36 @@
 import { supabase, BUCKET } from './supabase'
-import type { Attachment, Entry, Medication, Profile, Topic } from '../types'
+import type {
+  Attachment,
+  Document,
+  Entry,
+  Medication,
+  Profile,
+  Reminder,
+  ReminderLog,
+  Topic,
+} from '../types'
 
 export interface Snapshot {
   topics: Topic[]
   entries: Entry[]
   medications: Medication[]
   attachments: Attachment[]
+  documents: Document[]
+  reminders: Reminder[]
+  reminderLogs: ReminderLog[]
   profile: Profile | null
 }
 
-export const EMPTY: Snapshot = { topics: [], entries: [], medications: [], attachments: [], profile: null }
+export const EMPTY: Snapshot = {
+  topics: [],
+  entries: [],
+  medications: [],
+  attachments: [],
+  documents: [],
+  reminders: [],
+  reminderLogs: [],
+  profile: null,
+}
 
 const CACHE_KEY = 'historial-cache-v1'
 const OUTBOX_KEY = 'historial-outbox-v1'
@@ -37,20 +58,28 @@ export function clearLocal() {
 }
 
 export async function fetchAll(): Promise<Snapshot> {
-  const [topics, entries, medications, attachments, profile] = await Promise.all([
-    supabase.from('topics').select('*').order('created_at', { ascending: true }),
-    supabase.from('entries').select('*').order('occurred_at', { ascending: false }),
-    supabase.from('medications').select('*').order('created_at', { ascending: false }),
-    supabase.from('attachments').select('*').order('created_at', { ascending: true }),
-    supabase.from('profiles').select('*').maybeSingle(),
-  ])
-  const err = topics.error || entries.error || medications.error || attachments.error
+  const [topics, entries, medications, attachments, documents, reminders, reminderLogs, profile] =
+    await Promise.all([
+      supabase.from('topics').select('*').order('created_at', { ascending: true }),
+      supabase.from('entries').select('*').order('occurred_at', { ascending: false }),
+      supabase.from('medications').select('*').order('created_at', { ascending: false }),
+      supabase.from('attachments').select('*').order('created_at', { ascending: true }),
+      supabase.from('documents').select('*').order('doc_date', { ascending: false, nullsFirst: false }),
+      supabase.from('reminders').select('*').order('due_on', { ascending: true, nullsFirst: false }),
+      supabase.from('reminder_logs').select('*').order('done_on', { ascending: false }).limit(400),
+      supabase.from('profiles').select('*').maybeSingle(),
+    ])
+  const err =
+    topics.error || entries.error || medications.error || attachments.error || documents.error || reminders.error
   if (err) throw err
   const snap: Snapshot = {
     topics: (topics.data ?? []) as Topic[],
     entries: (entries.data ?? []) as Entry[],
     medications: (medications.data ?? []) as Medication[],
     attachments: (attachments.data ?? []) as Attachment[],
+    documents: (documents.data ?? []) as Document[],
+    reminders: (reminders.data ?? []) as Reminder[],
+    reminderLogs: (reminderLogs.data ?? []) as ReminderLog[],
     profile: (profile.data as Profile | null) ?? null,
   }
   writeCache(snap)
@@ -192,6 +221,85 @@ export async function signedUrl(path: string): Promise<string | null> {
   if (error || !data) return null
   urlCache.set(path, { url: data.signedUrl, expires: Date.now() + 3000_000 })
   return data.signedUrl
+}
+
+/* ---------------- Archivo de documentos ---------------- */
+
+export async function uploadDocument(
+  userId: string,
+  file: File,
+  meta: { title: string; kind: Document['kind']; doc_date: string | null; topic_id: string | null; notes: string | null },
+) {
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().slice(0, 5)
+  const path = `${userId}/docs/${crypto.randomUUID()}.${ext}`
+  const up = await supabase.storage.from(BUCKET).upload(path, file, {
+    contentType: file.type || 'application/octet-stream',
+    upsert: false,
+  })
+  if (up.error) throw up.error
+  const { data, error } = await supabase
+    .from('documents')
+    .insert({ ...meta, user_id: userId, path, mime: file.type || null, size_bytes: file.size })
+    .select()
+    .single()
+  if (error) throw error
+  return data as Document
+}
+
+export async function updateDocument(id: string, patch: Partial<Document>) {
+  const { data, error } = await supabase.from('documents').update(patch).eq('id', id).select().single()
+  if (error) throw error
+  return data as Document
+}
+
+export async function deleteDocument(doc: Document) {
+  await supabase.storage.from(BUCKET).remove([doc.path])
+  const { error } = await supabase.from('documents').delete().eq('id', doc.id)
+  if (error) throw error
+}
+
+/* ---------------- Recordatorios ---------------- */
+
+export async function createReminder(userId: string, patch: Partial<Reminder> & { title: string }) {
+  const { data, error } = await supabase
+    .from('reminders')
+    .insert({ ...patch, user_id: userId })
+    .select()
+    .single()
+  if (error) throw error
+  return data as Reminder
+}
+
+export async function updateReminder(id: string, patch: Partial<Reminder>) {
+  const { data, error } = await supabase.from('reminders').update(patch).eq('id', id).select().single()
+  if (error) throw error
+  return data as Reminder
+}
+
+export async function deleteReminder(id: string) {
+  const { error } = await supabase.from('reminders').delete().eq('id', id)
+  if (error) throw error
+}
+
+/** Marca el recordatorio como hecho hoy (o en la fecha dada). */
+export async function logReminder(userId: string, reminderId: string, onDay: string) {
+  const { data, error } = await supabase
+    .from('reminder_logs')
+    .upsert({ user_id: userId, reminder_id: reminderId, done_on: onDay }, { onConflict: 'reminder_id,done_on' })
+    .select()
+    .single()
+  if (error) throw error
+  await supabase.from('reminders').update({ last_done_on: onDay }).eq('id', reminderId)
+  return data as ReminderLog
+}
+
+export async function unlogReminder(reminderId: string, onDay: string) {
+  const { error } = await supabase
+    .from('reminder_logs')
+    .delete()
+    .eq('reminder_id', reminderId)
+    .eq('done_on', onDay)
+  if (error) throw error
 }
 
 /* ---------------- Bandeja de salida (sin internet) ---------------- */

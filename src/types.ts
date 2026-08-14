@@ -113,3 +113,101 @@ export interface Profile {
   emergency_contact: string | null
   updated_at: string
 }
+
+export type DocKind =
+  | 'radiografia'
+  | 'examen'
+  | 'orden'
+  | 'formula'
+  | 'resultado'
+  | 'incapacidad'
+  | 'factura'
+  | 'otro'
+
+export interface Document {
+  id: string
+  user_id: string
+  topic_id: string | null
+  title: string
+  kind: DocKind
+  doc_date: string | null
+  path: string
+  mime: string | null
+  size_bytes: number | null
+  notes: string | null
+  created_at: string
+}
+
+export type ReminderKind = 'tomar' | 'reclamar' | 'examen' | 'documento' | 'cita' | 'otro'
+export type Repeat = 'none' | 'daily' | 'weekly' | 'monthly'
+
+export interface Reminder {
+  id: string
+  user_id: string
+  topic_id: string | null
+  medication_id: string | null
+  title: string
+  kind: ReminderKind
+  due_on: string | null
+  due_time: string | null
+  repeat: Repeat
+  active: boolean
+  last_done_on: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface ReminderLog {
+  id: string
+  user_id: string
+  reminder_id: string
+  done_on: string
+  created_at: string
+}
+
+export const DOC_LABEL: Record<DocKind, string> = {
+  radiografia: 'Radiografía',
+  examen: 'Examen',
+  orden: 'Orden médica',
+  formula: 'Fórmula',
+  resultado: 'Resultado',
+  incapacidad: 'Incapacidad',
+  factura: 'Factura',
+  otro: 'Otro',
+}
+
+export const DOC_EMOJI: Record<DocKind, string> = {
+  radiografia: '🦴',
+  examen: '🧪',
+  orden: '📄',
+  formula: '📝',
+  resultado: '📊',
+  incapacidad: '🏥',
+  factura: '🧾',
+  otro: '📎',
+}
+
+export const REM_LABEL: Record<ReminderKind, string> = {
+  tomar: 'Tomar medicamento',
+  reclamar: 'Reclamar en la EPS',
+  examen: 'Hacerme el examen',
+  documento: 'Subir un documento',
+  cita: 'Cita / trámite',
+  otro: 'Otro',
+}
+
+export const REM_EMOJI: Record<ReminderKind, string> = {
+  tomar: '💊',
+  reclamar: '🏪',
+  examen: '🧪',
+  documento: '📄',
+  cita: '📅',
+  otro: '🔔',
+}
+
+export const REPEAT_LABEL: Record<Repeat, string> = {
+  none: 'Una sola vez',
+  daily: 'Todos los días',
+  weekly: 'Cada semana',
+  monthly: 'Cada mes',
+}

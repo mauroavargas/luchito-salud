@@ -1,14 +1,23 @@
 const LOCALE = 'es-CO'
 
+/**
+ * "2026-08-14" se parsea como medianoche UTC y en Colombia eso cae el día
+ * anterior. Las fechas sin hora hay que leerlas en hora local.
+ */
+function parse(iso: string): Date {
+  const soloFecha = /^\d{4}-\d{2}-\d{2}$/.test(iso)
+  return soloFecha ? new Date(`${iso}T00:00:00`) : new Date(iso)
+}
+
 export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '—'
-  const d = new Date(iso)
+  const d = parse(iso)
   return d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 export function fmtShort(iso: string | null | undefined): string {
   if (!iso) return '—'
-  const d = new Date(iso)
+  const d = parse(iso)
   return d.toLocaleDateString(LOCALE, { day: '2-digit', month: 'short' })
 }
 
@@ -37,7 +46,7 @@ export function fmtDayHeader(iso: string): string {
 /** "hace 3 días" — para decir desde cuándo pasa algo. */
 export function since(iso: string | null | undefined): string {
   if (!iso) return ''
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
+  const days = Math.floor((Date.now() - parse(iso).getTime()) / 86400000)
   if (days <= 0) return 'hoy'
   if (days === 1) return 'hace 1 día'
   if (days < 31) return `hace ${days} días`

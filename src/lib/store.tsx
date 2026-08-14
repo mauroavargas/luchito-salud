@@ -4,7 +4,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import * as api from './data'
 import type { Snapshot } from './data'
-import type { Attachment, Entry, Medication, Profile, Topic } from '../types'
+import type { Attachment, Document, Entry, Medication, Profile, Reminder, Topic } from '../types'
 
 interface Ctx {
   session: Session | null
@@ -27,6 +27,22 @@ interface Ctx {
   addMed: (patch: Partial<Medication> & { name: string }) => Promise<void>
   editMed: (id: string, patch: Partial<Medication>) => Promise<void>
   removeMed: (id: string) => Promise<void>
+  addDocument: (
+    file: File,
+    meta: {
+      title: string
+      kind: Document['kind']
+      doc_date: string | null
+      topic_id: string | null
+      notes: string | null
+    },
+  ) => Promise<void>
+  editDocument: (id: string, patch: Partial<Document>) => Promise<void>
+  removeDocument: (doc: Document) => Promise<void>
+  addReminder: (patch: Partial<Reminder> & { title: string }) => Promise<void>
+  editReminder: (id: string, patch: Partial<Reminder>) => Promise<void>
+  removeReminder: (id: string) => Promise<void>
+  markReminder: (id: string, day: string, done: boolean) => Promise<void>
   editProfile: (patch: Partial<Profile>) => Promise<void>
   signOut: () => Promise<void>
 }
@@ -204,6 +220,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
       removeMed: async (id) => {
         await api.deleteMedication(id)
         setData((d) => ({ ...d, medications: d.medications.filter((x) => x.id !== id) }))
+      },
+
+      addDocument: async (file, meta) => {
+        const doc = await api.uploadDocument(need(), file, meta)
+        setData((d) => ({ ...d, documents: [doc, ...d.documents] }))
+        say('Documento guardado')
+      },
+      editDocument: async (id, patch) => {
+        const doc = await api.updateDocument(id, patch)
+        setData((d) => ({ ...d, documents: d.documents.map((x) => (x.id === id ? doc : x)) }))
+      },
+      removeDocument: async (doc) => {
+        await api.deleteDocument(doc)
+        setData((d) => ({ ...d, documents: d.documents.filter((x) => x.id !== doc.id) }))
+      },
+
+      addReminder: async (patch) => {
+        const r = await api.createReminder(need(), patch)
+        setData((d) => ({ ...d, reminders: [...d.reminders, r] }))
+        say('Recordatorio creado')
+      },
+      editReminder: async (id, patch) => {
+        const r = await api.updateReminder(id, patch)
+        setData((d) => ({ ...d, reminders: d.reminders.map((x) => (x.id === id ? r : x)) }))
+      },
+      removeReminder: async (id) => {
+        await api.deleteReminder(id)
+        setData((d) => ({
+          ...d,
+          reminders: d.reminders.filter((x) => x.id !== id),
+          reminderLogs: d.reminderLogs.filter((l) => l.reminder_id !== id),
+        }))
+      },
+      markReminder: async (id, day, done) => {
+        const uid = need()
+        if (done) {
+          const log = await api.logReminder(uid, id, day)
+          setData((d) => ({
+            ...d,
+            reminderLogs: [log, ...d.reminderLogs.filter((l) => !(l.reminder_id === id && l.done_on === day))],
+            reminders: d.reminders.map((r) => (r.id === id ? { ...r, last_done_on: day } : r)),
+          }))
+        } else {
+          await api.unlogReminder(id, day)
+          setData((d) => ({
+            ...d,
+            reminderLogs: d.reminderLogs.filter((l) => !(l.reminder_id === id && l.done_on === day)),
+          }))
+        }
       },
 
       editProfile: async (patch) => {

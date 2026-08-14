@@ -12,8 +12,14 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
+// En desarrollo el service worker serviría módulos viejos, así que solo va en producción.
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {})
-  })
+  if (import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {})
+    })
+  } else {
+    void navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => void r.unregister()))
+    void caches?.keys().then((ks) => ks.forEach((k) => void caches.delete(k)))
+  }
 }

@@ -1,7 +1,8 @@
 import type { Snapshot } from './data'
-import type { Entry, Medication, Topic } from '../types'
-import { EFFECT_LABEL, KIND_LABEL } from '../types'
+import type { Document, Entry, Medication, Reminder, Topic } from '../types'
+import { DOC_LABEL, EFFECT_LABEL, KIND_LABEL, REM_LABEL } from '../types'
 import { fmtDate, severityLabel, since } from './format'
+import { adherence, pendingReminders } from './nudges'
 
 export interface TopicSummary {
   topic: Topic
@@ -13,6 +14,7 @@ export interface TopicSummary {
   maxSeverity: number | null
   avgSeverity: number | null
   photos: number
+  docs: Document[]
 }
 
 export interface Summary {
@@ -21,6 +23,9 @@ export interface Summary {
   preguntas: Entry[]
   medsActivos: Medication[]
   medsFallidos: Medication[]
+  documents: Document[]
+  adherencia: { reminder: Reminder; done: number; days: number }[]
+  tramites: { reminder: Reminder; overdue: number }[]
   totalEntries: number
 }
 
@@ -44,6 +49,7 @@ export function buildSummary(data: Snapshot): Summary {
         maxSeverity: sev.length ? Math.max(...sev) : null,
         avgSeverity: sev.length ? Math.round((sev.reduce((a, b) => a + b, 0) / sev.length) * 10) / 10 : null,
         photos: data.attachments.filter((a) => ids.has(a.entry_id)).length,
+        docs: data.documents.filter((d) => d.topic_id === topic.id),
       }
     })
     // Primero lo activo, y dentro de eso lo que más ha pasado.
@@ -59,6 +65,13 @@ export function buildSummary(data: Snapshot): Summary {
     preguntas: data.entries.filter((e) => e.kind === 'pregunta' && !e.resolved),
     medsActivos: data.medications.filter((m) => !m.ended_on),
     medsFallidos: data.medications.filter((m) => m.effect === 'no_ayuda' || m.effect === 'empeora'),
+    documents: data.documents,
+    adherencia: data.reminders
+      .filter((r) => r.active && r.kind === 'tomar' && r.repeat === 'daily')
+      .map((r) => ({ reminder: r, ...adherence(data, r.id, 30) })),
+    tramites: pendingReminders(data)
+      .filter((p) => !p.doneToday && ['reclamar', 'examen', 'documento', 'cita'].includes(p.reminder.kind))
+      .map((p) => ({ reminder: p.reminder, overdue: p.overdue })),
     totalEntries: data.entries.filter(noQuestions).length,
   }
 }
@@ -94,6 +107,10 @@ export function summaryText(data: Snapshot, s: Summary): string {
       L.push(`  · ${fmtDate(e.occurred_at)}${sev}: ${e.title || KIND_LABEL[e.kind]}${e.note ? ` — ${e.note}` : ''}`)
     }
     if (t.entries.length > 6) L.push(`  · (+${t.entries.length - 6} registros más en la app)`)
+    if (t.docs.length) {
+      L.push('  Documentos guardados:')
+      for (const d of t.docs) L.push(`  · ${DOC_LABEL[d.kind]}: ${d.title}${d.doc_date ? ` (${fmtDate(d.doc_date)})` : ''}`)
+    }
     if (t.meds.length) {
       L.push('  Medicamentos para esto:')
       for (const m of t.meds) L.push(`  · ${m.name}${m.dose ? ` ${m.dose}` : ''} — ${EFFECT_LABEL[m.effect]}`)
@@ -115,6 +132,27 @@ export function summaryText(data: Snapshot, s: Summary): string {
   if (s.medsFallidos.length) {
     L.push('— YA PROBÓ Y NO LE SIRVIÓ —')
     for (const m of s.medsFallidos) L.push(`· ${m.name} — ${EFFECT_LABEL[m.effect]}`)
+    L.push('')
+  }
+
+  if (s.adherencia.length) {
+    L.push('— CUMPLIMIENTO DEL TRATAMIENTO (últimos 30 días) —')
+    for (const a of s.adherencia) L.push(`· ${a.reminder.title}: ${a.done} de ${a.days} días`)
+    L.push('')
+  }
+
+  if (s.tramites.length) {
+    L.push('— TRÁMITES PENDIENTES —')
+    for (const t of s.tramites) {
+      L.push(`· ${REM_LABEL[t.reminder.kind]}: ${t.reminder.title}` + (t.overdue > 0 ? ` (atrasado ${t.overdue} días)` : ''))
+    }
+    L.push('')
+  }
+
+  const sueltos = s.documents.filter((d) => !d.topic_id)
+  if (sueltos.length) {
+    L.push('— OTROS DOCUMENTOS —')
+    for (const d of sueltos) L.push(`· ${DOC_LABEL[d.kind]}: ${d.title}${d.doc_date ? ` (${fmtDate(d.doc_date)})` : ''}`)
     L.push('')
   }
 

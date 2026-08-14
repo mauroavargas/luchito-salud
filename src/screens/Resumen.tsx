@@ -4,7 +4,7 @@ import EntrySheet from '../components/EntrySheet'
 import { AttachmentGrid } from '../components/Photos'
 import { useApp } from '../lib/store'
 import { buildSummary, summaryText } from '../lib/summary'
-import { EFFECT_LABEL, KIND_LABEL, STATUS_LABEL } from '../types'
+import { DOC_LABEL, EFFECT_LABEL, KIND_LABEL, REM_LABEL, STATUS_LABEL } from '../types'
 import type { Entry } from '../types'
 import { fmtDate, since } from '../lib/format'
 
@@ -104,7 +104,7 @@ export default function Resumen() {
           <div className="empty">
             Aún no hay nada que resumir.
             <br />
-            Anota lo que te pasa desde la pestaña “Registrar”.
+            Anota lo que te pasa desde la pestaña “Hoy”.
           </div>
         ) : (
           <div className="stack">
@@ -166,6 +166,15 @@ export default function Resumen() {
                         )
                       })}
                     </ul>
+                  )}
+
+                  {t.docs.length > 0 && (
+                    <p className="small" style={{ marginTop: 10 }}>
+                      <strong>Documentos: </strong>
+                      {t.docs
+                        .map((d) => `${DOC_LABEL[d.kind]} “${d.title}”${d.doc_date ? ` (${fmtDate(d.doc_date)})` : ''}`)
+                        .join(', ')}
+                    </p>
                   )}
 
                   {t.meds.length > 0 && (
@@ -233,6 +242,55 @@ export default function Resumen() {
               <p className="small">
                 {s.medsFallidos.map((m) => `${m.name} (${EFFECT_LABEL[m.effect].toLowerCase()})`).join(' · ')}
               </p>
+            </div>
+          </>
+        )}
+
+        {s.adherencia.length > 0 && (
+          <>
+            <div className="section-title">Cumplimiento del tratamiento</div>
+            <div className="card">
+              <ul style={{ margin: 0, paddingLeft: 20 }}>
+                {s.adherencia.map((a) => (
+                  <li key={a.reminder.id} style={{ marginBottom: 6 }}>
+                    <strong>{a.reminder.title}</strong>: {a.done} de los últimos {a.days} días
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
+
+        {s.tramites.length > 0 && (
+          <>
+            <div className="section-title">Trámites pendientes</div>
+            <div className="card" style={{ borderColor: 'var(--warn)' }}>
+              <ul style={{ margin: 0, paddingLeft: 20 }}>
+                {s.tramites.map((t) => (
+                  <li key={t.reminder.id} style={{ marginBottom: 6 }}>
+                    {REM_LABEL[t.reminder.kind]}: <strong>{t.reminder.title}</strong>
+                    {t.overdue > 0 && <span style={{ color: 'var(--alert)' }}> — atrasado {t.overdue} día(s)</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
+
+        {s.documents.filter((d) => !d.topic_id).length > 0 && (
+          <>
+            <div className="section-title">Otros documentos guardados</div>
+            <div className="card">
+              <ul style={{ margin: 0, paddingLeft: 20 }}>
+                {s.documents
+                  .filter((d) => !d.topic_id)
+                  .map((d) => (
+                    <li key={d.id} style={{ marginBottom: 5 }}>
+                      {DOC_LABEL[d.kind]}: <strong>{d.title}</strong>
+                      {d.doc_date ? ` (${fmtDate(d.doc_date)})` : ''}
+                    </li>
+                  ))}
+              </ul>
             </div>
           </>
         )}
