@@ -21,6 +21,10 @@ export default function Sheet({
   const [state, setState] = useState<'open' | 'closed'>('open')
   const panel = useRef<HTMLDivElement>(null)
   const devolverFoco = useRef<HTMLElement | null>(null)
+  // Se calcula en el primer render y no vuelve a cambiar. Leerlo dentro del
+  // efecto daría cero en el segundo montaje de StrictMode, cuando el body ya
+  // estuvo congelado, y la hoja abriría saltando al principio de la página.
+  const scrollGuardado = useRef(typeof window === 'undefined' ? 0 : window.scrollY)
 
   const cerrar = useCallback(() => {
     setState('closed')
@@ -30,11 +34,26 @@ export default function Sheet({
   useEffect(() => {
     devolverFoco.current = document.activeElement as HTMLElement | null
 
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    // Bloquear el fondo con `overflow: hidden` tiene un efecto secundario feo:
+    // al no haber nada que desbordar, el navegador lleva el scroll a cero y al
+    // cerrar la hoja ella aparece arriba del todo, lejos de donde estaba.
+    // Fijar el body con un desplazamiento negativo lo congela donde está y
+    // permite devolverlo intacto.
+    const y = scrollGuardado.current
+    const body = document.body
+    const previo = { position: body.style.position, top: body.style.top, width: body.style.width }
+    body.style.position = 'fixed'
+    body.style.top = `-${y}px`
+    body.style.width = '100%'
 
     return () => {
-      document.body.style.overflow = prev
+      body.style.position = previo.position
+      body.style.top = previo.top
+      body.style.width = previo.width
+      // Forzar el recálculo: sin esto el documento todavía mide poco y el
+      // navegador recorta el scroll a cero.
+      void body.offsetHeight
+      window.scrollTo(0, y)
       devolverFoco.current?.focus?.()
     }
   }, [])

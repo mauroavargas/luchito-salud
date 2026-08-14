@@ -10,9 +10,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "e2e": "playwright test app",
+    "e2e": "playwright test app responsive",
     "e2e:ui": "playwright test --ui",
-    "capturas": "playwright test capturas"
+    "capturas": "playwright test capturas",
+    "test:seguridad": "vitest run --config vitest.seguridad.config.ts",
+    "auditar:rls": "./seguridad/auditar-rls.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",

@@ -34,11 +34,34 @@ Detalles que importan en la práctica:
 - Los recordatorios se pueden exportar al calendario del celular (`.ics`), que es lo que de verdad
   suena aunque la app esté cerrada.
 
-## Privacidad
+## Privacidad y seguridad
 
-Los datos y las fotos viven en Supabase, en tablas con *row level security*: cada usuario solo puede
-leer y escribir lo suyo, y el bucket de archivos es privado (se accede con URLs firmadas temporales).
-Este repositorio solo tiene código; ningún dato de salud pasa por aquí.
+Los datos y las fotos viven en Supabase. Lo único que los separa del resto de internet es la
+*row level security* de Postgres: la URL del proyecto y la clave `anon` viajan dentro del bundle que
+cualquiera puede leer, porque así funciona un cliente web. **Son públicas por diseño; lo que protege
+los datos son las políticas, no el secreto de la clave.** Por eso están probadas:
+
+```bash
+npm run test:seguridad   # 34 casos: intenta leer, cambiar y borrar datos ajenos
+npm run auditar:rls      # ninguna tabla puede quedarse sin RLS ni sin políticas
+```
+
+Qué comprueban, en concreto:
+
+- Sin sesión no se lee ni una fila de ninguna tabla, ni se baja ningún archivo.
+- Con una cuenta distinta no se ven, cambian ni borran los datos de otra persona, **ni pidiéndolos
+  por su id**, ni conociendo su `user_id`, ni la ruta exacta de una foto.
+- No se puede insertar una fila a nombre de otra persona (la política `WITH CHECK`).
+- El bucket es privado: la URL pública no sirve; solo funcionan URLs firmadas y temporales, y solo
+  las puede firmar la dueña de los archivos.
+- Las restricciones de la base rechazan datos imposibles (intensidad fuera de 0–10, tipos inventados,
+  dos marcas del mismo recordatorio el mismo día).
+
+El método de detección se validó al revés: con una tabla desechable **sin** RLS, la prueba
+efectivamente la ve. Un test de seguridad que solo sabe pasar no sirve de nada.
+
+Este repositorio contiene solo código: ningún dato de salud pasa por aquí. La contraseña de la base
+vive en `.supabase-secrets.local`, fuera de git.
 
 ## Diseño
 
@@ -60,7 +83,7 @@ fuentes que tarden en cargar.
 
 ```bash
 npm test         # lógica: avisos, resumen, fechas, calendario (69 casos)
-npm run e2e      # flujos reales en WebKit con viewport de iPhone (14 casos)
+npm run e2e      # flujos y responsive en Android (Chromium) y iPhone (WebKit): 38 casos
 npm run capturas # deja en capturas/ una foto de cada pantalla y cada hoja
 ```
 

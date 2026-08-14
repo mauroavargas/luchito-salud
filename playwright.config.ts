@@ -10,12 +10,15 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: 'http://localhost:5173/luchito-salud/',
-    // Un teléfono, que es donde de verdad se usa.
-    ...devices['iPhone 13'],
     locale: 'es-CO',
     timezoneId: 'America/Bogota',
     trace: 'retain-on-failure',
   },
+  projects: [
+    // Android es donde ella la va a usar. Va primero.
+    { name: 'android', use: { ...devices['Pixel 5'] } },
+    { name: 'iphone', use: { ...devices['iPhone 13'] } },
+  ],
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173/luchito-salud/',

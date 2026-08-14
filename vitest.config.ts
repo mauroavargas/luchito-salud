@@ -4,6 +4,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Las pruebas de RLS van aparte: tocan el proyecto real y tardan más.
+    exclude: ['seguridad/**', 'node_modules/**'],
     // La app se usa en Colombia. Fijar la zona evita que los tests de fechas
     // pasen aquí y fallen en CI (o al revés).
     env: { TZ: 'America/Bogota' },

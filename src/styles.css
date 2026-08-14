@@ -171,6 +171,19 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+html,
+body {
+  /* Que la pantalla no se pueda arrastrar de lado: si algo se desborda por
+     un descuido, se recorta en vez de volver toda la página panorámica.
+     `clip` en vez de `hidden` para no crear un contenedor de scroll. */
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+  /* Sin encadenar el scroll al navegador: nada de "recargar tirando hacia
+     abajo" en mitad de una nota. */
+  overscroll-behavior-y: contain;
+}
+
 body {
   margin: 0;
   background: var(--paper);
@@ -180,6 +193,24 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Una URL o un nombre larguísimo parte de línea en vez de ensanchar la
+     página. Es texto escrito por una persona con dolor, no copy revisado. */
+  overflow-wrap: anywhere;
+}
+
+/* Ningún hijo de una fila o rejilla puede negarse a encogerse: es la causa
+   número uno de que dos campos se monten en una pantalla angosta. */
+.row > *,
+.stack > *,
+.pair > *,
+.quick > * {
+  min-width: 0;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
 }
 
 /* Superficies del navegador: si no se visten, delatan que la página se
