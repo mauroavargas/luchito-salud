@@ -167,8 +167,11 @@ enable_refresh_token_rotation = true
 # Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
-# Allow/disallow new user signups to your project.
-enable_signup = true
+# App privada: solo las cuentas ya creadas (Mauro y su hermana). Cerrado el
+# 14/08/2026 a petición suya. Para agregar a alguien, se crea la cuenta desde
+# el panel de Supabase (Authentication → Users → Add user) o se vuelve a poner
+# en true, se registra la persona y se cierra otra vez.
+enable_signup = false
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
@@ -212,7 +215,9 @@ web3 = 30
 # secret = ""
 
 [auth.email]
-# Allow/disallow new user signups via email to your project.
+# NO poner en false: apaga el inicio de sesión con correo, no solo el registro,
+# y deja fuera a las cuentas que ya existen. El registro se cierra únicamente
+# con el enable_signup de la sección [auth].
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.

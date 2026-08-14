@@ -14,7 +14,8 @@
     "e2e:ui": "playwright test --ui",
     "capturas": "playwright test capturas",
     "test:seguridad": "vitest run --config vitest.seguridad.config.ts",
-    "auditar:rls": "./seguridad/auditar-rls.sh"
+    "auditar:rls": "./seguridad/auditar-rls.sh",
+    "limpiar:pruebas": "vitest run --config vitest.seguridad.config.ts pruebas/limpiar.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",

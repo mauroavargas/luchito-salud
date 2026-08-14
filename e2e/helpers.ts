@@ -1,21 +1,29 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
+import { borrarUsuarioDePrueba, crearUsuarioDePrueba } from '../pruebas/admin'
+import type { CuentaDePrueba } from '../pruebas/admin'
 
-/** Cuenta nueva por corrida, para que un test no vea los datos de otro. */
-export function nuevaCuenta() {
-  const id = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
-  return { email: `e2e-${id}@ejemplo.test`, password: 'prueba-e2e-123' }
+/**
+ * Cada prueba entra con su propia cuenta para no ver los datos de otra. Como
+ * el registro público está cerrado, la cuenta se crea con la clave de servicio
+ * y la prueba solo hace lo que haría ella: escribir correo y contraseña.
+ */
+export async function crearCuenta(page: Page): Promise<CuentaDePrueba> {
+  const cuenta = await crearUsuarioDePrueba('e2e-')
+  await entrar(page, cuenta)
+  return cuenta
 }
 
-export async function crearCuenta(page: Page) {
-  const cuenta = nuevaCuenta()
+export async function entrar(page: Page, cuenta: { email: string; password: string }) {
   await page.goto('./')
-  await page.getByRole('button', { name: /Primera vez/ }).click()
   await page.getByLabel('Correo').fill(cuenta.email)
   await page.getByLabel('Contraseña').fill(cuenta.password)
-  await page.getByRole('button', { name: 'Crear mi cuenta' }).click()
+  await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page.getByRole('heading', { name: /^Hola/ })).toBeVisible()
-  return cuenta
+}
+
+export async function borrarCuenta(cuenta: CuentaDePrueba) {
+  await borrarUsuarioDePrueba(cuenta.id)
 }
 
 export async function irA(page: Page, tab: string) {

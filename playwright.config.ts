@@ -8,6 +8,7 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: [['list']],
+  globalTeardown: './pruebas/limpiar.ts',
   use: {
     baseURL: 'http://localhost:5173/luchito-salud/',
     locale: 'es-CO',

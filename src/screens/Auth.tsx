@@ -19,7 +19,11 @@ export default function Auth() {
         : await supabase.auth.signUp(creds)
     if (err) {
       const msg = err.message.toLowerCase()
+      // Supabase describe el registro cerrado de varias formas según la versión.
+      const registroCerrado = /signup|sign-up|signups/.test(msg) && /disabled|not allowed/.test(msg)
       if (msg.includes('invalid login')) setError('Correo o contraseña incorrectos.')
+      else if (registroCerrado)
+        setError('Esta app es privada y el registro está cerrado. Si necesitas una cuenta, pídesela a Mauro.')
       else if (msg.includes('already registered')) setError('Ese correo ya tiene cuenta. Entra con tu contraseña.')
       else if (msg.includes('password')) setError('La contraseña debe tener al menos 6 caracteres.')
       else if (msg.includes('fetch') || msg.includes('network'))

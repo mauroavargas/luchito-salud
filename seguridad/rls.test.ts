@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { borrarUsuarioDePrueba, claveAnon, crearUsuarioDePrueba, urlProyecto } from '../pruebas/admin'
 
 /**
  * Lo único que separa el historial médico de ella del resto de internet es la
@@ -13,8 +14,8 @@ import { beforeAll, describe, expect, it } from 'vitest'
  * Corren contra el proyecto real. No hay forma honesta de probar RLS con un
  * simulacro.
  */
-const URL = import.meta.env.VITE_SUPABASE_URL as string
-const ANON = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+const URL = urlProyecto()
+const ANON = claveAnon()
 
 const BUCKET = 'adjuntos'
 const TABLAS = ['topics', 'entries', 'medications', 'attachments', 'documents', 'reminders', 'reminder_logs', 'profiles'] as const
@@ -23,12 +24,21 @@ function cliente() {
   return createClient(URL, ANON, { auth: { persistSession: false, autoRefreshToken: false } })
 }
 
+/**
+ * El registro público está cerrado, así que la cuenta se crea con la clave de
+ * servicio y luego se entra como entraría cualquiera: con correo y contraseña.
+ * Es importante que la sesión sea de usuario normal, porque la clave de
+ * servicio se salta la seguridad y no probaría nada.
+ */
 async function cuentaNueva() {
+  const cuenta = await crearUsuarioDePrueba('rls-')
   const sb = cliente()
-  const email = `rls-${Date.now()}-${Math.floor(Math.random() * 1e6)}@ejemplo.test`
-  const { data, error } = await sb.auth.signUp({ email, password: 'prueba-rls-123' })
+  const { error } = await sb.auth.signInWithPassword({
+    email: cuenta.email,
+    password: cuenta.password,
+  })
   if (error) throw error
-  return { sb, id: data.user!.id, email }
+  return { sb, id: cuenta.id, email: cuenta.email }
 }
 
 let ana: { sb: SupabaseClient; id: string; email: string }
@@ -95,6 +105,13 @@ beforeAll(async () => {
     .single()
   if (doc.error) throw doc.error
   deAna.document = doc.data.id
+}, 60_000)
+
+afterAll(async () => {
+  // Las pruebas no dejan basura en el proyecto real.
+  for (const cuenta of [ana, curiosa]) {
+    if (cuenta?.id) await borrarUsuarioDePrueba(cuenta.id)
+  }
 }, 60_000)
 
 describe('sin iniciar sesión', () => {

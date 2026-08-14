@@ -2,9 +2,22 @@ import { expect, test } from '@playwright/test'
 import { crearCuenta, hojaAbierta, irA } from './helpers'
 
 test.describe('entrar a la app', () => {
-  test('se puede crear una cuenta y entra directo, sin confirmar correo', async ({ page }) => {
+  test('con su cuenta entra directo, sin confirmar correo', async ({ page }) => {
     await crearCuenta(page)
     await expect(page.getByRole('navigation', { name: 'Secciones' })).toBeVisible()
+  })
+
+  test('el registro está cerrado y lo dice con claridad', async ({ page }) => {
+    // La app es privada: solo las cuentas ya creadas. Un desconocido que llegue
+    // al enlace no puede abrirse una cuenta, y tiene que entenderlo.
+    await page.goto('./')
+    await page.getByRole('button', { name: /Primera vez/ }).click()
+    await page.getByLabel('Correo').fill(`colado-${Date.now()}@ejemplo.test`)
+    await page.getByLabel('Contraseña').fill('quiero-entrar-123')
+    await page.getByRole('button', { name: 'Crear mi cuenta' }).click()
+
+    await expect(page.getByRole('alert')).toHaveText(/registro está cerrado/)
+    await expect(page.getByRole('navigation', { name: 'Secciones' })).toBeHidden()
   })
 
   test('avisa con palabras claras cuando la contraseña está mal', async ({ page }) => {
