@@ -79,6 +79,13 @@ export default function Hoy({
             {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
+        <button
+          className="btn ghost sm"
+          onClick={() => setPerfil(true)}
+          aria-label="Mis datos y ajustes"
+        >
+          <Icon name="ajustes" size={17} />
+        </button>
       </header>
 
       {(offline || pendingCount > 0) && (

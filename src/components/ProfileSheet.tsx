@@ -19,7 +19,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet
-      title="Mis datos"
+      title="Mis datos y ajustes"
       onClose={onClose}
       footer={
         <div className="stack">
@@ -47,7 +47,30 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
         </div>
       }
     >
-      <p className="small muted" style={{ marginBottom: 'var(--s5)' }}>
+      <div style={{ marginBottom: 'var(--s6)' }}>
+        <h3 style={{ marginBottom: 'var(--s2)' }}>Cómo se ve la app</h3>
+        <p className="meta" style={{ marginBottom: 'var(--s3)' }}>
+          “Como el celular” sigue lo que ya tengas puesto en tu teléfono.
+        </p>
+        <div className="chips">
+          {TEMAS.map((t) => (
+            <button
+              key={t}
+              className="chip"
+              aria-pressed={tema === t}
+              onClick={() => {
+                setTema(t)
+                setTheme(t)
+              }}
+            >
+              {THEME_LABEL[t]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <h3 style={{ marginBottom: 'var(--s2)' }}>Datos para el médico</h3>
+      <p className="small muted" style={{ marginBottom: 'var(--s4)' }}>
         Esto aparece de primero en el resumen, para no tener que repetirlo en cada cita.
       </p>
       <label className="field">
@@ -85,25 +108,6 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
           placeholder="Ej: escoliosis severa diagnosticada en 2019, cirugía de apendicitis en 2015"
         />
       </label>
-      <div style={{ marginBottom: 'var(--s5)' }}>
-        <h3 style={{ marginBottom: 'var(--s3)' }}>Cómo se ve la app</h3>
-        <div className="chips">
-          {TEMAS.map((t) => (
-            <button
-              key={t}
-              className="chip"
-              aria-pressed={tema === t}
-              onClick={() => {
-                setTema(t)
-                setTheme(t)
-              }}
-            >
-              {THEME_LABEL[t]}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <label className="field">
         <span>A quién llamar en una emergencia</span>
         <input

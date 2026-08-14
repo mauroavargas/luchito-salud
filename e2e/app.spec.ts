@@ -158,16 +158,28 @@ test.describe('resumen para el médico', () => {
 })
 
 test.describe('apariencia', () => {
+  test('el cambio de tema se alcanza desde la pantalla de inicio', async ({ page }) => {
+    await crearCuenta(page)
+    // Sin pasar por Resumen: tiene que estar a un toque desde Hoy.
+    await page.getByRole('button', { name: 'Mis datos y ajustes' }).click()
+    await hojaAbierta(page, 'Mis datos y ajustes')
+    await expect(page.getByRole('heading', { name: 'Cómo se ve la app' })).toBeVisible()
+  })
+
   test('la preferencia de tema se guarda y sobrevive a recargar', async ({ page }) => {
     await crearCuenta(page)
-    await irA(page, 'Resumen')
-    await page.getByRole('button', { name: 'Mis datos', exact: true }).click()
-    await hojaAbierta(page, 'Mis datos')
+    await page.getByRole('button', { name: 'Mis datos y ajustes' }).click()
+    await hojaAbierta(page, 'Mis datos y ajustes')
 
     await page.getByRole('button', { name: 'Oscuro' }).click()
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 
     await page.reload()
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+    // Y se puede devolver a seguir al celular.
+    await page.getByRole('button', { name: 'Mis datos y ajustes' }).click()
+    await page.getByRole('button', { name: 'Como el celular' }).click()
+    await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.*/)
   })
 })
